@@ -1,0 +1,9 @@
+[submodule "src/BroadcastAssembler"]
+	path = src/BroadcastAssembler
+	url = ../FEniCS_Modules/BroadcastAssembler/
+[submodule "src/multiwriter"]
+	path = src/multiwriter
+	url = ../FEniCS_Modules/multiwriter/
+[submodule "src/ProximityTree"]
+	path = src/ProximityTree
+	url = ../FEniCS_Modules/ProximityTree/
