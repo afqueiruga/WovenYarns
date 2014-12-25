@@ -65,7 +65,8 @@ class ContactPair():
         self.chi_s_table = chi_s_table
         self.chi_X_table = chi_X_table
         self.chi_dist_table = chi_dist_table
-
+        self.pair_flattened = self.pair_table.flatten()
+        
     def chi_to_mesh(self):
         mesh = Mesh()
         edit = MeshEditor()

@@ -22,7 +22,8 @@ class Fibril():
         self.wv = Function(self.W)
         self.Fform,self.Mform,self.AXform,self.AVform = BeamForm(self.W,self.V,self.wx,self.wv)
 
-        left =  CompiledSubDomain("near(x[0], side) && on_boundary", side = 0.0)
+        left =  CompiledSubDomain("near(x[0], s0) && near(x[1], s1) && near(x[2], s2) && on_boundary",
+                                  s0 = 0.0, s1 = 0.0, s2 = 0.0,)
         cl = Expression(("0.0","0.0","0.0",  "0.0"," 0.0","0.0",  "0.0","0.0","0.0"))
         bc1 = DirichletBC(self.W, cl, left)
         right =  CompiledSubDomain("near(x[0], side) && on_boundary", side = 10.0)
