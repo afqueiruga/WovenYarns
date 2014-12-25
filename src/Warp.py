@@ -33,22 +33,28 @@ class Warp():
         self.mdof.build(mmfs, np.array([],dtype=np.intc) )
         self.contacts = []
 
-    def write_files(self,fname,i):
+    def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
             fib.write_file(fname.format(j),i)
-        
+
+    def output_contacts(self,fname):
+        for j,c in enumerate(self.contacts):
+            c.output_file(fname.format(self.fibril_pairs[j][0],self.fibril_pairs[j][1],"pairs"),
+                          fname.format(self.fibril_pairs[j][0],self.fibril_pairs[j][1],"gamma") )
         
     def create_contacts(self,pairs=None):
         """
         Create all of the neccessary contact pairs.
         If a list of pairs isn't specified, just create the n^2 list.
         """
+
         if not pairs:
-            pairs = [ (j,i) for i in xrange(1,j) for j in xrange(len(self.fibrils)) ]
-        
+            pairs = [ (j,i) for j in xrange(len(self.fibrils)) for i in xrange(j+1,len(self.fibrils))  ]
+
+        self.fibril_pairs = pairs
         self.contacts = []
         for i,p in enumerate(pairs):
-            cp = ContactPair(fibrils[p[0]].mesh, fibrils[p[1]].mesh)
+            cp = ContactPair(self.fibrils[p[0]].mesh, self.fibrils[p[1]].mesh,20)
             cp.make_table()
             self.contacts.append(cp)
         

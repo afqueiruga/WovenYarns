@@ -1,5 +1,9 @@
 from dolfin import *
+import numpy as np
+
 import ProximityTree
+
+from IPython import embed
 
 """
 This calculates a contact mapping between two meshes.
@@ -76,3 +80,16 @@ class ContactPair():
         edit.close()
         return mesh
 
+    def output_file(self,fname_pairs,fname_gamma):
+        if fname_gamma:
+            GammaC = self.chi_to_mesh()
+            mfC = CellFunction("double",GammaC)
+            for i in xrange(len(self.chi_X_table)):
+                mfC.set_value(i,self.chi_s_table[i,1])
+            ff = File(fname_gamma)
+            ff << mfC
+
+        if fname_pairs:
+            cs = ProximityTree.plotpairs(self.pair_table,self.meshA,self.meshB)
+            ff = File(fname_pairs)
+            ff << cs
