@@ -29,18 +29,23 @@ class Fibril():
         cr = Expression(("0.0","0.0","0.0",  "0.0"," 0.0","0.0",  "0.0","0.0","0.0"))
         bc2 = DirichletBC(self.W, cr, right)
         self.bcs=[bc1]
-        
+
+        self.Height = 1.0
+        self.Width = 0.5
+    
     def start_file(self,fname):
         "Open an empty file with fname."
-        self.vfile = VTKAppender,fname,"ascii")
-
-    def write_file(self):
+        pass
+    
+    def write_file(self,fname,i):
         """
         Pop out one file on the currently active file.
         """
-        import multiwriter.multiwriter.compiled_module.VTKAppender as VTKAppender
-        q,h1,h2 = wx.split()
-        vq,vh1,vh2=wv.split()
+        from multiwriter.multiwriter import VTKAppender
+        vfile = VTKAppender(fname,"ascii")
+
+        q,h1,h2    = self.wx.split()
+        vq,vh1,vh2 = self.wv.split()
         q.rename("q","field")
         h1.rename("h1","field")
         h2.rename("h2","field")
@@ -51,12 +56,15 @@ class Fibril():
         # q1.interpolate(Height/2.0*Constant((0.0,1.0,0.0))+h1)
         # q2 = Function(V)
         # q2.interpolate(Width/2.0*Constant((0.0,0.0,1.0))+h2)
-        q1 = project(Height/2.0*Constant((0.0,1.0,0.0))+h1,V)
+        q1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
         q1.rename("q1","field")
-        q2 = project(Width/2.0*Constant((0.0,0.0,1.0))+h2,V)
+        q2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
         q2.rename("q2","field")
-        self.vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2],[])
+
+        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2],[])
+        vfile = VTKAppender(fname,"ascii")
 
     def close_file(self):
         "Self explanatory."
-        self.vfile.close()
+        # self.vfile.close()
+        pass
