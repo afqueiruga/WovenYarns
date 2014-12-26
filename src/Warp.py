@@ -34,8 +34,7 @@ class Warp():
             self.mmfs.add(self.fibrils[i].W)
         self.mdof.build(self.mmfs, np.array([],dtype=np.intc) )
 
-        self.mmfs.build(MM, np.array([],dtype=np.intc) )
-        embed()        
+        self.mmfs.build(MM, np.array([],dtype=np.intc) )    
         self.contacts = []
         
     def output_states(self,fname,i):
@@ -132,15 +131,38 @@ class Warp():
                                      cp.chi_n_max)
         AV.apply('add')
 
-
+        R = Vector()
+        
+        assem = BroadcastAssembler()
+        dim = np.array([gN],dtype=np.intc)
+        local_dofs = np.array([0,gN],dtype=np.intc)
+        assem.init_global_tensor(R,dim,1,0, local_dofs,self.mdof.off_process_owner())
+        # assem.sparsity_cell_pair(fibrils[0].Fform, 
+        #                           fibrils[0].mesh, mdof.part(0),
+        #                           fibrils[1].mesh, mdof.part(1),
+        #                           cp.pair_flattened)
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].Fform, self.mdof.part(i))
+        for i,cp in enumerate(self.contacts):
+            assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].Fform, 
+                                     cp.meshA, self.mdof.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][1]].Fform, 
+                                     cp.meshB, self.mdof.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened,
+                                     cp.chi_X_table.flatten(),
+                                     cp.chi_n_max)
+        R.apply('add')
+        
         self.M = M
         self.AX = AX
         self.AV = AV
-        
+        self.R = R
         
     def apply_bcs(self):
-        zero = Constant((0.0,0.0,0.0))
+        zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
         bound = CompiledSubDomain("on_boundary")
         bc = MultiMeshDirichletBC(self.mmfs, zero, bound)
 
+        bc.apply(self.AX,self.R)
         pass
