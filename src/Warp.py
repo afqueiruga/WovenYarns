@@ -17,6 +17,7 @@ class Warp():
         """
         import ProximityTree
         self.fibrils = []
+        MM = MultiMesh()
         self.mdof = MultiMeshDofMap()
         self.mmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
@@ -30,11 +31,13 @@ class Warp():
             temp.interpolate(Expression(("0.0","0.0","0.0")))
             assign(self.fibrils[i].wv.sub(0), temp)
             self.mdof.add(self.fibrils[i].W.dofmap())
-            self.mmfs.add(self.fibril[i].W)
+            self.mmfs.add(self.fibrils[i].W)
         self.mdof.build(self.mmfs, np.array([],dtype=np.intc) )
-        self.mmfs.build()
-        self.contacts = []
 
+        self.mmfs.build(MM, np.array([],dtype=np.intc) )
+        embed()        
+        self.contacts = []
+        
     def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
             fib.write_file(fname.format(j),i)
@@ -129,9 +132,15 @@ class Warp():
                                      cp.chi_n_max)
         AV.apply('add')
 
-        
+
         self.M = M
         self.AX = AX
         self.AV = AV
         
         
+    def apply_bcs(self):
+        zero = Constant((0.0,0.0,0.0))
+        bound = CompiledSubDomain("on_boundary")
+        bc = MultiMeshDirichletBC(self.mmfs, zero, bound)
+
+        pass
