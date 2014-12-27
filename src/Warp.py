@@ -3,6 +3,7 @@ import numpy as np
 
 from Fibril import Fibril
 from ContactPair import ContactPair
+from ContactMultiMesh import ContactMultiMesh
 
 from IPython import embed
 class Warp():
@@ -17,24 +18,35 @@ class Warp():
         """
         import ProximityTree
         self.fibrils = []
-        MM = MultiMesh()
-        self.mdof = MultiMeshDofMap()
+        self.CMM = ContactMultiMesh()
+        # self.mdof = MultiMeshDofMap()
         self.mmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
             me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 50)
-            self.fibrils.append( Fibril(me) )
-            # Initialize the position (zero for now, but I want it to be x)
-            temp = Function(self.fibrils[i].V)
-            temp.interpolate(Expression(("0.0","0.0","0.0")))
-            assign(self.fibrils[i].wx.sub(0), temp)
-            # Initialize the velocity (zero for now)
-            temp.interpolate(Expression(("0.0","0.0","0.0")))
-            assign(self.fibrils[i].wv.sub(0), temp)
-            self.mdof.add(self.fibrils[i].W.dofmap())
-            self.mmfs.add(self.fibrils[i].W)
-        self.mdof.build(self.mmfs, np.array([],dtype=np.intc) )
+            fib = Fibril(me)
+            self.fibrils.append( fib )
+            self.CMM.add( fib.mesh)
+            self.mmfs.add( fib.W )
 
-        self.mmfs.build(MM, np.array([],dtype=np.intc) )    
+        self.CMM.build()
+        self.mmfs.build(self.CMM, np.array([],dtype=np.intc) )
+        self.mdof = self.mmfs.dofmap()
+        self.wx = MultiMeshFunction(self.mmfs)
+        self.wv = MultiMeshFunction(self.mmfs)
+        
+        for i,fib in enumerate( self.fibrils ):
+            fib.build_form(self.wx.part(i),self.wv.part(i))
+            # Initialize the position (zero for now, but I want it to be x)
+            # temp = Function(self.fibrils[i].V)
+            # temp.interpolate(Expression(("0.0","0.0","0.0")))
+            # assign(self.fibrils[i].wx.sub(0), temp)
+            # Initialize the velocity (zero for now)
+            # temp.interpolate(Expression(("0.0","0.0","0.0")))
+            # assign(self.fibrils[i].wv.sub(0), temp)
+            # self.mdof.add(self.fibrils[i].W.dofmap())
+            # self.mmfs.add(self.fibrils[i].W)
+        # self.mdof.build(self.mmfs, np.array([],dtype=np.intc) )
+        
         self.contacts = []
         
     def output_states(self,fname,i):
