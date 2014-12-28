@@ -174,8 +174,13 @@ class Warp():
         
     def apply_bcs(self):
         zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
-        bound = CompiledSubDomain("on_boundary")
-        bc = MultiMeshDirichletBC(self.mmfs, zero, bound)
+        extend = Constant((0.1,0.1,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 
-        bc.apply(self.AX,self.R)
+        left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -1.0)
+        bcleft = MultiMeshDirichletBC(self.mmfs, zero, left)
+        right = CompiledSubDomain("near(x[0], side) && on_boundary", side = 1.0)
+        bcright = MultiMeshDirichletBC(self.mmfs, extend, right)
+
+        bcleft.apply(self.AX,self.R)
+        bcright.apply(self.AX,self.R)
         pass
