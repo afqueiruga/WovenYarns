@@ -59,7 +59,7 @@ def BeamForm(W,V,wx,wv):
         MassCont = inner(dv,rho*dvdt)
         PsiCont = Constant(weight)*((mu/2)*(Ic - 3) - mu*ln(J) + (lmbda/2)*(ln(J))**2)
         # VelocityCont = inner(du,v)
-        FExtCont = inner(dv,Constant((0.00,0.00,0.0)))
+        FExtCont = inner(dv,Constant((0.00,0.1,0.1)))
         FExtCont += inner(dv,-0.000001*v)
         
         # Psi += PsiCont
@@ -71,7 +71,7 @@ def BeamForm(W,V,wx,wv):
         Mass = MassCont if Mass is None else Mass + MassCont
         FExt = FExtCont if FExt is None else FExt + FExtCont
         # Velocity = VelocityCont if Velocity is None else Velocity + VelocityCont
-    ContactForm = dot(jump(dvr),Constant((1.0,1.0,1.0))+(Constant(10.0)-dot(jump(r),jump(r)))*jump(r))*dc(0, metadata={"num_cells": 2,"special":"contact"})
+    ContactForm = dot(jump(dvr),(Constant(0.1)-dot(jump(r),jump(r)))*jump(r))*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     
     Fform = -derivative(Psi,wx,dw)*dx + FExt*dx + ContactForm#- Mass*dx

@@ -19,18 +19,19 @@ class Warp():
         import ProximityTree
         self.fibrils = []
         self.CMM = ContactMultiMesh()
-        # self.mdof = MultiMeshDofMap()
+        self.mdof = MultiMeshDofMap()
         self.mmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
-            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 50)
+            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 10)
             fib = Fibril(me)
             self.fibrils.append( fib )
             self.CMM.add( fib.mesh)
             self.mmfs.add( fib.W )
-
+            self.mdof.add( fib.W.dofmap() )
         self.CMM.build()
         self.mmfs.build(self.CMM, np.array([],dtype=np.intc) )
-        self.mdof = self.mmfs.dofmap()
+        # self.mdof = self.mmfs.dofmap()
+        self.mdof.build( self.mmfs, np.array([],dtype=np.intc) )
         self.wx = MultiMeshFunction(self.mmfs)
         self.wv = MultiMeshFunction(self.mmfs)
         

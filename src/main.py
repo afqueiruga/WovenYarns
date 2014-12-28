@@ -14,12 +14,13 @@ Main entry point of the simulation.
 
 from Warp import Warp
 
-endpts = [ [ [0.0,-1.0,0.0],[0.0, 1.0,0.0] ],
-           [ [-0.71,-0.71,0.1],[0.71, 0.71,0.1] ],
-           [ [0.0,-1.0,0.2],[0.0, 1.0,0.2] ] ]
+endpts = [ [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ],
+           [ [-1.0, 0.0,0.1],  [1.0, 0.0, 0.1] ] ,
+           [ [-1.0, 0.0,0.2],  [1.0, 0.0, 0.2] ] ]
 
 warp = Warp(endpts)
 warp.create_contacts()
+embed()
 
 warp.assemble_system()
 warp.apply_bcs()
@@ -32,10 +33,11 @@ solve(warp.AX,w.vector(),warp.R)
 
 print "here"
 for i,fib in enumerate(warp.fibrils):
-    pass
-    # assign(fib.wx, w.part(i))
+    # pass
+    assign(fib.wx, w.part(i))
+    print i
+    print fib.wx
 print "there"
-embed()
 warp.output_states("../post/fibril_{0}_.pvd",1)
 warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
 
