@@ -35,7 +35,7 @@ class Warp():
         self.wv = MultiMeshFunction(self.mmfs)
         
         for i,fib in enumerate( self.fibrils ):
-            fib.build_form(self.wx.part(i),self.wv.part(i))
+            fib.build_form() #self.wx.part(i),self.wv.part(i))
             # Initialize the position (zero for now, but I want it to be x)
             # temp = Function(self.fibrils[i].V)
             # temp.interpolate(Expression(("0.0","0.0","0.0")))
