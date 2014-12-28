@@ -20,7 +20,7 @@ endpts = [ [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ],
 
 warp = Warp(endpts)
 warp.create_contacts()
-embed()
+
 
 warp.assemble_system()
 warp.apply_bcs()
@@ -31,15 +31,16 @@ solve(warp.AX,w.vector(),warp.R)
 # for i,fib in enumerate(warp.fibrils):
 #     fib.wx.vector()[:] = w.part(i).vector()[:]
 
-print "here"
+
 for i,fib in enumerate(warp.fibrils):
     # pass
-    assign(fib.wx, w.part(i))
-    print i
-    print fib.wx
-print "there"
+    fib.wx.vector()[:] = w.vector()[ warp.mdof.part(i).dofs() ]
+
+
+    # I need to make the DOFMAP actually give a set of dofs(),
+    # now only cell_dof(i) works...
+
 warp.output_states("../post/fibril_{0}_.pvd",1)
 warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
 
-        
 embed()
