@@ -3,6 +3,7 @@
 from dolfin import *
 
 from matplotlib import pylab as plt
+import numpy as np
 
 from IPython import embed
 
@@ -21,18 +22,27 @@ endpts = [ [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ],
 warp = Warp(endpts)
 warp.create_contacts()
 
+Delw = MultiMeshFunction(warp.mmfs)
 
-warp.assemble_system()
-warp.apply_bcs()
+maxiter = 10
+tol = 1.0e-9
+for t in xrange(1,2):
+    it=0
+    eps=1.0
+    print "Simulation step ",t,":"
+    while eps>tol and it < maxiter:
+        
+        warp.assemble_system()
+        warp.apply_bcs(stheta=t*np.pi/4.0,hold=(it!=0))
+        solve(warp.AX,Delw.vector(),warp.R)
+        
+        eps = np.linalg.norm(Delw.vector().array(), ord=np.Inf)
+        for i,fib in enumerate(warp.fibrils):
+            fib.wx.vector()[:] = fib.wx.vector()[:] - Delw.vector()[ warp.mdof.part(i).dofs() ]
+        print " Newton iteration ",it," infNorm = ",eps, "  ",(it!=0)
 
-w = MultiMeshFunction(warp.mmfs)
-solve(warp.AX,w.vector(),warp.R)
-
-for i,fib in enumerate(warp.fibrils):
-    fib.wx.vector()[:] = w.vector()[ warp.mdof.part(i).dofs() ]
-
-
-warp.output_states("../post/fibril_{0}_.pvd",1)
-warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
+        it+=1
+        warp.output_states("../post/fibril_{0}_"+str(it)+".pvd",1)
+        warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
 
 embed()
