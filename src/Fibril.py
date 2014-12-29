@@ -29,8 +29,11 @@ class Fibril():
             self.wx = Function(wx)
             self.wv = Function(wv)
 
+        self.X0 = Function(self.V)
+        self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
+        
         self.Fform,self.Mform,self.AXform,self.AVform = \
-          BeamForm(self.W,self.V,self.wx,self.wv)
+          BeamForm(self.W,self.V,self.wx,self.wv,self.X0)
 
         left =  CompiledSubDomain(
             "near(x[0], s0) && near(x[1], s1) && near(x[2], s2) && on_boundary",
