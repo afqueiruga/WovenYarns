@@ -169,15 +169,12 @@ class Warp():
         self.AV = AV
         self.R = R
         
-    def apply_bcs(self,stheta=np.pi/4.0,hold=False):
+    def apply_bcs(self,uend=None):
         zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
-        if hold:
+        if not uend:
             extend = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
-            print "********* HOLDING ************"
         else:
-            print "********* APPLYING ************"
-            extend = Expression(("0.0","-(x[1]*cos(theta)-x[2]*sin(theta)-x[1])","-(x[2]*cos(theta)+x[1]*sin(theta)-x[2])",
-                             "0.0","0.0","0.0", "0.0","0.0","0.0"),theta=stheta)
+            extend = uend
 
         left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -1.0)
         bcleft = MultiMeshDirichletBC(self.mmfs, zero, left)
