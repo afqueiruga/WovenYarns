@@ -41,8 +41,8 @@ for t in xrange(1,2):
             fib.wx.vector()[:] = fib.wx.vector()[:] - Delw.vector()[ warp.mdof.part(i).dofs() ]
         print " Newton iteration ",it," infNorm = ",eps, "  ",(it!=0)
 
-        it+=1
         warp.output_states("../post/fibril_{0}_"+str(it)+".pvd",1)
         warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
+        it+=1
 
 embed()

@@ -179,7 +179,7 @@ class Warp():
             print "********* HOLDING ************"
         else:
             print "********* APPLYING ************"
-            extend = Expression(("0.0","x[1]*cos(theta)-x[2]*sin(theta)-x[1]","x[2]*cos(theta)+x[1]*sin(theta)-x[2]",
+            extend = Expression(("0.0","-(x[1]*cos(theta)-x[2]*sin(theta)-x[1])","-(x[2]*cos(theta)+x[1]*sin(theta)-x[2])",
                              "0.0","0.0","0.0", "0.0","0.0","0.0"),theta=stheta)
 
         left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -1.0)
