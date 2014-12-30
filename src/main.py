@@ -15,8 +15,8 @@ Main entry point of the simulation.
 
 from Warp import Warp
 
-endpts = [ [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ],
-           [ [-1.0, 0.0,0.1],  [1.0, 0.0, 0.1] ] ,
+endpts = [ [ [-1.0, 0.0,-0.2],  [1.0, 0.0, -0.2] ],
+           [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ] ,
            [ [-1.0, 0.0,0.2],  [1.0, 0.0, 0.2] ] ]
 
 warp = Warp(endpts)
@@ -26,14 +26,14 @@ Delw = MultiMeshFunction(warp.mmfs)
 
 maxiter = 10
 tol = 1.0e-9
-for t in xrange(1,10):
+for t in xrange(1,64):
     it=0
     eps=1.0
     print "Simulation step ",t,":"
     extend = Expression(("0.0",
                          "-(x[1]*cos(theta)-x[2]*sin(theta)-x[1]-(x[1]*cos(old_theta)-x[2]*sin(old_theta)-x[1]))",
                          "-(x[2]*cos(theta)+x[1]*sin(theta)-x[2]-(x[2]*cos(old_theta)+x[1]*sin(old_theta)-x[2]))",
-                         "0.0","0.0","0.0", "0.0","0.0","0.0"),theta=t*np.pi/8.0,old_theta=(t-1)*np.pi/8.0)
+                         "0.0","0.0","0.0", "0.0","0.0","0.0"),theta=t*np.pi/32.0,old_theta=(t-1)*np.pi/32.0)
     while eps>tol and it < maxiter:
         
         warp.assemble_system()
