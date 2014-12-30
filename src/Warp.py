@@ -85,21 +85,20 @@ class Warp():
         assem = BroadcastAssembler()
         assem.init_global_tensor(M,dim,2,0, local_dofs, self.mdof.off_process_owner())
 
-        print self.mdof.part(0)
+
         for i,fib in enumerate(self.fibrils):
             assem.sparsity_form(self.fibrils[i].Mform, self.mdof.part(i)) # crashing here?
         assem.sparsity_apply()
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].Mform, self.mdof.part(i))
         M.apply('add')
-        print "yo"
         
         AX = Matrix()
         assem = BroadcastAssembler()
         assem.init_global_tensor(AX,dim,2,0, local_dofs, self.mdof.off_process_owner())
         for i,fib in enumerate(self.fibrils):
             assem.sparsity_form(self.fibrils[i].AXform, self.mdof.part(i))
-        print "here"
+
         for i,cp in enumerate(self.contacts):
             assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].AXform, 
                                      cp.meshA, self.mdof.part(self.fibril_pairs[i][0]),
@@ -108,7 +107,7 @@ class Warp():
         assem.sparsity_apply()
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].AXform, self.mdof.part(i))
-        print "here"
+
         for i,cp in enumerate(self.contacts):
             assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].AXform, 
                                      cp.meshA, self.mdof.part(self.fibril_pairs[i][0]),
@@ -124,7 +123,6 @@ class Warp():
         assem.init_global_tensor(AV,dim,2,0, local_dofs, self.mdof.off_process_owner())
         for i,fib in enumerate(self.fibrils):
             assem.sparsity_form(self.fibrils[i].AVform, self.mdof.part(i))
-        print "here"
         for i,cp in enumerate(self.contacts):
             assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].AVform, 
                                      cp.meshA, self.mdof.part(self.fibril_pairs[i][0]),
@@ -133,7 +131,6 @@ class Warp():
         assem.sparsity_apply()
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].AVform, self.mdof.part(i))
-        print "here"
         for i,cp in enumerate(self.contacts):
             assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].AVform, 
                                      cp.meshA, self.mdof.part(self.fibril_pairs[i][0]),

@@ -75,7 +75,7 @@ def BeamForm(W,V,wx,wv,X0):
     ContactForm = dot(jump(dvr),(Constant(0.1)-sqrt(dot(jump(xr),jump(xr))))*jump(xr))*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     
-    Fform = -derivative(Psi,wx,dw)*dx + FExt*dx + ContactForm#- Mass*dx
+    Fform = -derivative(Psi,wx,dw)*dx + FExt*dx + ContactForm #- Mass*dx
     Mform = Mass*dx #derivative(F,dwdt,Deldwdt)
     AXform = derivative(Fform,wx,Delw)
     AVform = derivative(Fform,wv,Delw)
