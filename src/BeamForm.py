@@ -74,7 +74,9 @@ def BeamForm(W,V,wx,wv,X0):
     xr = X0 + r
     dist = sqrt(dot(jump(xr),jump(xr)))
     overlap = (Constant(0.1)-dist)
-    ContactForm = dot(jump(dvr),conditional(ge(overlap,0.0),-100.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+    forc = conditional(ge(overlap,0.0),-10.0*overlap,0.0)
+    ContactForm = dot(jump(dvr),
+                      jump(xr)/(dist*dist))*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     
     Fform = -derivative(Psi,wx,dw)*dx + FExt*dx + ContactForm #- Mass*dx

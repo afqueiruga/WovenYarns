@@ -22,7 +22,7 @@ class Warp():
         self.mdof = MultiMeshDofMap()
         self.mmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
-            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 10)
+            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
             fib = Fibril(me)
             self.fibrils.append( fib )
             self.CMM.add( fib.mesh)
@@ -67,11 +67,15 @@ class Warp():
 
         if not pairs:
             pairs = [ (j,i) for j in xrange(len(self.fibrils)) for i in xrange(j+1,len(self.fibrils))  ]
-
+        for i,fib in enumerate(self.fibrils):
+            fib.current_mesh = Mesh(fib.mesh)
+            fib.current_mesh.move(fib.wx.sub(0))
+            
         self.fibril_pairs = pairs
         self.contacts = []
         for i,p in enumerate(pairs):
-            cp = ContactPair(self.fibrils[p[0]].mesh, self.fibrils[p[1]].mesh,20)
+            cp = ContactPair(self.fibrils[p[0]].mesh,self.fibrils[p[0]].mesh,
+                             self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,20)
             cp.make_table()
             self.contacts.append(cp)
         

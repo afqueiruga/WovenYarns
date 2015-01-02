@@ -11,14 +11,18 @@ Only line meshes in 3D currently supported.
 """
 
 class ContactPair():
-    def __init__(self,meA, meB, chi_n_max):
+    def __init__(self,meA, refA, meB, refB, chi_n_max):
         self.meshA = meA
         self.meshB = meB
+        self.ref_meshA = refA
+        self.ref_meshB = refB
         self.chi_n_max = chi_n_max
         
     def make_table(self):
         meA = self.meshA
         meB = self.meshB
+        refA = self.ref_meshA
+        refB = self.ref_meshB
         pt = ProximityTree.compiled_module.ProximityTree3D()
         pt.build(meA,1)
         pairs = []
@@ -34,13 +38,18 @@ class ContactPair():
         vertsA = meA.coordinates()
         cellsB = meB.cells()
         vertsB = meB.coordinates()
-
+        
+        ref_cellsA = refA.cells()
+        ref_vertsA = refA.coordinates()
+        ref_cellsB = refB.cells()
+        ref_vertsB = refB.coordinates()
+        
         npairs = len(pairs)
         pair_table = np.array(pairs,dtype=np.intc)
         chi_s_table =    np.zeros([npairs*self.chi_n_max,2],dtype=np.double)
         chi_X_table =    np.zeros([npairs*self.chi_n_max,6],dtype=np.double)
         chi_dist_table = np.ones([npairs*self.chi_n_max],dtype=np.double)
-        truncate = np.vectorize(lambda x: 0.0 if x<0.0 else 1.0 if x>1.0 else x, otypes=[np.double])
+        truncate = np.vectorize(lambda x: 0.1 if x<0.1 else 0.9 if x>0.9 else x, otypes=[np.double])
 
         lda = self.chi_n_max
         for i,(mid,sid) in enumerate(pair_table):
@@ -48,20 +57,25 @@ class ContactPair():
             xA2 = vertsA[cellsA[mid,1]]
             xB1 = vertsB[cellsB[sid,0]]
             xB2 = vertsB[cellsB[sid,1]]
+            
+            XA1 = ref_vertsA[ref_cellsA[mid,0]]
+            XA2 = ref_vertsA[ref_cellsA[mid,1]]
+            XB1 = ref_vertsB[ref_cellsB[sid,0]]
+            XB2 = ref_vertsB[ref_cellsB[sid,1]]
             itr = 0
             delB = xB1-xB2
             denom =    delB.dot(delB)
             constant = ( xA2.dot(delB) - xB2.dot(delB) ) / denom
             linear =   ( xA1.dot(delB) - xA2.dot(delB) ) / denom
-            chi_s_table[i*lda:(i+1)*lda,0] = np.linspace(0.0,1.0,lda)
+            chi_s_table[i*lda:(i+1)*lda,0] = np.linspace(0.1,0.9,lda)
             chi_s_table[i*lda:(i+1)*lda,1] = constant + linear * chi_s_table[i*lda:(i+1)*lda,0]
             chi_s_table[i*lda:(i+1)*lda,1] = truncate(chi_s_table[i*lda:(i+1)*lda,1])
             for c in xrange(lda):
-                chi_X_table[i*lda+c,:3] = xA1 * chi_s_table[i*lda+c,0] + xA2*(1.0-chi_s_table[i*lda+c,0])
-                chi_X_table[i*lda+c,3:] = xB1 * chi_s_table[i*lda+c,1] + xB2*(1.0-chi_s_table[i*lda+c,1])    
+                chi_X_table[i*lda+c,:3] = XA1 * chi_s_table[i*lda+c,0] + XA2*(1.0-chi_s_table[i*lda+c,0])
+                chi_X_table[i*lda+c,3:] = XB1 * chi_s_table[i*lda+c,1] + XB2*(1.0-chi_s_table[i*lda+c,1])    
                 chi_dist_table[i*lda+c] = np.linalg.norm(chi_X_table[i*lda+c,:3]-chi_X_table[i*lda+c,3:])
 
-
+        # embed()
         self.pair_table = pair_table
         self.chi_s_table = chi_s_table
         self.chi_X_table = chi_X_table

@@ -15,18 +15,19 @@ Main entry point of the simulation.
 
 from Warp import Warp
 
-endpts = [ [ [-1.0, 0.0,-0.2],  [1.0, 0.0, -0.2] ],
-           [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ] ,
-           [ [-1.0, 0.0,0.2],  [1.0, 0.0, 0.2] ] ]
+endpts = [ [ [-1.0, 0.0,-0.1],  [1.0, 0.0, -0.1] ],
+           # [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ] ,
+           [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ] ]
 
 warp = Warp(endpts)
-warp.create_contacts()
 
 Delw = MultiMeshFunction(warp.mmfs)
 
 maxiter = 10
 tol = 1.0e-9
 for t in xrange(1,64):
+    warp.create_contacts()
+    # embed()
     it=0
     eps=1.0
     print "Simulation step ",t,":"

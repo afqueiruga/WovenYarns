@@ -16,6 +16,7 @@ class Fibril():
         Dirrichlet BCs by default.
         """
         self.mesh=mesh
+        self.current_mesh = Mesh(mesh)
         self.V = VectorFunctionSpace(mesh,"CG",1)
         self.W = MixedFunctionSpace([self.V,self.V,self.V])
         if wx and wv:
