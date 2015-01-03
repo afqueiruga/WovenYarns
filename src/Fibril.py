@@ -2,6 +2,7 @@ from dolfin import *
 import numpy as np
 
 from BeamForm import BeamForm
+from ThermalForm import ThermalForm
 
 """
 
@@ -21,6 +22,7 @@ class Fibril():
         self.W = MixedFunctionSpace([self.V,self.V,self.V])
         if wx and wv:
             build_form(wx,wv)
+        self.S = FunctionSpace(mesh,"CG",1)
         
     def build_form(self,wx=None,wv=None):
         if not wx and not wv:
@@ -48,6 +50,10 @@ class Fibril():
 
         self.Height = 1.0
         self.Width = 0.5
+
+        self.T = Function(self.S)
+        self.FTform, self.MT, self.ATform = ThermalForm(self.S,self.T,self.X0)
+        
     def start_file(self,fname):
         "Open an empty file with fname."
         pass
