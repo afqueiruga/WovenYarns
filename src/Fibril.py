@@ -52,7 +52,7 @@ class Fibril():
         self.Width = 0.5
 
         self.T = Function(self.S)
-        self.FTform, self.MT, self.ATform = ThermalForm(self.S,self.T,self.X0)
+        self.FTform, self.MTform, self.ATform = ThermalForm(self.S,self.T,self.X0)
         
     def start_file(self,fname):
         "Open an empty file with fname."
@@ -82,7 +82,9 @@ class Fibril():
         q2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
         q2.rename("q2","field")
 
-        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2],[])
+        self.T.rename("T","field")
+        
+        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, self.T],[])
         # vfile = VTKAppender(fname,"ascii")
 
     def close_file(self):

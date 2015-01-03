@@ -18,4 +18,4 @@ def ThermalForm(S,T,X0):
     AT = inner( dT.dx(0), thermalCond * DelT.dx(0) ) * dx
     FT = inner( dT, 1.0)*dx 
 
-    return Mass, FT, AT
+    return Form(FT), Form(Mass), Form(AT)
