@@ -21,6 +21,8 @@ class Warp():
         self.CMM = ContactMultiMesh()
         self.mdof = MultiMeshDofMap()
         self.mmfs = MultiMeshFunctionSpace()
+        self.Tmdof = MultiMeshDofMap()
+        self.Tmmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
             me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
             fib = Fibril(me)
@@ -28,13 +30,19 @@ class Warp():
             self.CMM.add( fib.mesh)
             self.mmfs.add( fib.W )
             self.mdof.add( fib.W.dofmap() )
+            self.Tmmfs.add( fib.S )
+            self.Tmdof.add( fib.S.dofmap() )
+
         self.CMM.build()
         self.mmfs.build(self.CMM, np.array([],dtype=np.intc) )
         # self.mdof = self.mmfs.dofmap()
         self.mdof.build( self.mmfs, np.array([],dtype=np.intc) )
+        self.Tmmfs.build(self.CMM, np.array([],dtype=np.intc) )
+        self.Tmdof.build( self.Tmmfs, np.array([],dtype=np.intc) )
+
         self.wx = MultiMeshFunction(self.mmfs)
         self.wv = MultiMeshFunction(self.mmfs)
-        
+
         for i,fib in enumerate( self.fibrils ):
             fib.build_form() #self.wx.part(i),self.wv.part(i))
             # Initialize the position (zero for now, but I want it to be x)
@@ -78,6 +86,71 @@ class Warp():
                              self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,20)
             cp.make_table()
             self.contacts.append(cp)
+
+    def assemble_thermal_system(self):
+        from BroadcastAssembler import BroadcastAssembler
+        gN = self.Tmdof.global_dimension()
+        dim = np.array([gN,gN],dtype=np.intc)
+        local_dofs = np.array([0,gN,0,gN],dtype=np.intc)
+
+        M = Matrix()
+        assem = BroadcastAssembler()
+        assem.init_global_tensor(M,dim,2,0, local_dofs, self.Tmdof.off_process_owner())
+        for i,fib in enumerate(self.fibrils):
+            assem.sparsity_form(self.fibrils[i].MTform, self.Tmdof.part(i)) # crashing here?
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].MTform, self.Tmdof.part(i))
+        M.apply('add')
+
+        
+        AX = Matrix()
+        assem = BroadcastAssembler()
+        assem.init_global_tensor(AX,dim,2,0, local_dofs, self.Tmdof.off_process_owner())
+        for i,fib in enumerate(self.fibrils):
+            assem.sparsity_form(self.fibrils[i].ATform, self.Tmdof.part(i))
+
+        for i,cp in enumerate(self.contacts):
+            assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].ATform, 
+                                     cp.meshA, self.Tmdof.part(self.fibril_pairs[i][0]),
+                                     cp.meshB, self.Tmdof.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened)
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].ATform, self.Tmdof.part(i))
+
+        for i,cp in enumerate(self.contacts):
+            assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].ATform, 
+                                     cp.meshA, self.Tmdof.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][1]].ATform, 
+                                     cp.meshB, self.Tmdof.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened,
+                                     cp.chi_X_table.flatten(),
+                                     cp.chi_n_max)
+        AX.apply('add')
+
+        R = Vector()
+        
+        assem = BroadcastAssembler()
+        dim = np.array([gN],dtype=np.intc)
+        local_dofs = np.array([0,gN],dtype=np.intc)
+        assem.init_global_tensor(R,dim,1,0, local_dofs,self.Tmdof.off_process_owner())
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].FTform, self.Tmdof.part(i))
+        for i,cp in enumerate(self.contacts):
+            assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].FTform, 
+                                     cp.meshA, self.Tmdof.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][1]].FTform, 
+                                     cp.meshB, self.Tmdof.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened,
+                                     cp.chi_X_table.flatten(),
+                                     cp.chi_n_max)
+        R.apply('add')
+
+        self.MT = M
+        self.AT = AX
+        self.RT = R
         
     def assemble_system(self):
         from BroadcastAssembler import BroadcastAssembler
@@ -88,8 +161,6 @@ class Warp():
         M = Matrix()
         assem = BroadcastAssembler()
         assem.init_global_tensor(M,dim,2,0, local_dofs, self.mdof.off_process_owner())
-
-
         for i,fib in enumerate(self.fibrils):
             assem.sparsity_form(self.fibrils[i].Mform, self.mdof.part(i)) # crashing here?
         assem.sparsity_apply()
@@ -172,7 +243,27 @@ class Warp():
         self.AX = AX
         self.AV = AV
         self.R = R
+
+    def apply_thermal_bcs(self,uend=None):
+        zero = Constant(0.0)
+        if not uend:
+            extend = Constant(0.0)
+        else:
+            extend = uend
+        allbound =CompiledSubDomain("on_boundary")
+        bcall = MultiMeshDirichletBC(self.Tmmfs,zero,allbound)
+
         
+        left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -1.0)
+        bcleft = MultiMeshDirichletBC(self.Tmmfs, zero, left)
+        right = CompiledSubDomain("near(x[0], side) && near(x[2], 0.0) && on_boundary", side = 1.0)
+        bcright = MultiMeshDirichletBC(self.Tmmfs, extend, right)
+
+        # bcleft.apply(self.AX,self.R)
+        # bcright.apply(self.AX,self.R)
+        bcall.apply(self.AT,self.RT)
+        bcright.apply(self.AT,self.RT)
+
     def apply_bcs(self,uend=None):
         zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
         if not uend:
