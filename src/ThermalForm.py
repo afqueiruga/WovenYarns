@@ -18,7 +18,7 @@ def ThermalForm(S,T,X0):
     dist = sqrt(dot(jump(X0),jump(X0)))
     overlap = (Constant(0.095)-dist)
     contactform = inner( jump(dT), conditional(le(sqrt(dot(jump(X0),jump(X0))),0.11), Constant(4.1),Constant(0.0))* jump(DelT) )*dc(0, metadata={"num_cells": 2,"special":"contact"})
-    AT = inner( dT.dx(0), thermalCond * DelT.dx(0) )* dx \
+    AT = inner( grad(dT), thermalCond * grad(DelT) )* dx \
       + contactform
       
     FT = inner( dT, Constant(0.0))*dx 

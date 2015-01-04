@@ -15,7 +15,7 @@ Main entry point of the simulation.
 
 from Warp import Warp
 
-endpts = [ [ [-1.0, 0.0,-0.1],  [1.0, 0.0, -0.1] ],
+endpts = [ [ [0.0, -1.0,-0.1],  [0.0, 1.0, -0.1] ],
            [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ] ]
 
 warp = Warp(endpts)
