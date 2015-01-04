@@ -24,7 +24,7 @@ warp.create_contacts()
 DelT = MultiMeshFunction(warp.Tmmfs)
 
 warp.assemble_thermal_system()
-warp.apply_thermal_bcs()
+warp.apply_thermal_bcs(Constant(1.0))
 
 solve(warp.AT,DelT.vector(),warp.RT)
 for i,fib in enumerate(warp.fibrils):

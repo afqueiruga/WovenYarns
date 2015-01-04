@@ -83,8 +83,8 @@ class Fibril():
         q2.rename("q2","field")
 
         self.T.rename("T","field")
-        
-        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, self.T],[])
+        self.X0.rename("X0","field")
+        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, self.T, self.X0],[])
         # vfile = VTKAppender(fname,"ascii")
 
     def close_file(self):

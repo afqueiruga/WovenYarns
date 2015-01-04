@@ -256,13 +256,14 @@ class Warp():
         
         left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -1.0)
         bcleft = MultiMeshDirichletBC(self.Tmmfs, zero, left)
-        right = CompiledSubDomain("near(x[0], side) && on_boundary", side = 1.0)
+        right = CompiledSubDomain("near(x[0], side) && near(x[2], 0.0) && on_boundary", side = 1.0)
         bcright = MultiMeshDirichletBC(self.Tmmfs, extend, right)
 
         # bcleft.apply(self.AX,self.R)
         # bcright.apply(self.AX,self.R)
         bcall.apply(self.AT,self.RT)
-        
+        bcright.apply(self.AT,self.RT)
+
     def apply_bcs(self,uend=None):
         zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
         if not uend:
