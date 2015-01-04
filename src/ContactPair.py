@@ -28,7 +28,7 @@ class ContactPair():
         pairs = []
         for i,c in enumerate(cells(meB)):
             # TODO: this needs to be a paramter
-            ent = pt.compute_proximity_collisions(c.midpoint(),0.6)
+            ent = pt.compute_proximity_collisions(c.midpoint(),1.6)
             for e in ent:
                 pairs.append([e,i])
                 
