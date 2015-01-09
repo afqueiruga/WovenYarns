@@ -11,6 +11,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
     r,g1,g2,Tnull,Vnull = split(wx)
 
     dw = TestFunction(W)
+    dvr,dvg1,dvg2, dT, dVol = split(dw)
     Delw = TrialFunction(W)
 
     dvdtW = TrialFunction(W)
@@ -57,7 +58,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
     ThermalMass = None
 
     J0 = Constant(Width*Height/4.0 )
-    for z1,z2,weight in GPS:
+    for z1,z2,weight in GPS2D:
         u = r + Height/2.0*Constant(z1)*g1 + Width/2.0*Constant(z2)*g2
         v = vr + Height/2.0*Constant(z1)*vg1 + Width/2.0*Constant(z2)*vg2
         
@@ -75,19 +76,23 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
         J = det(F)
         
         MassCont = inner(dv,rho*dvdt)
-        PsiCont = Constant(weight)*((mu/2)*(Ic - 3) - mu*ln(J) + (lmbda/2)*(ln(J))**2)
+
+        # Stored Energy at this point
+        mu_pt = mu+mu_alpha*T
+        PsiCont = Constant(weight)*((mu_pt/2)*(Ic - 3) - mu_pt*ln(J) + (lmbda/2)*(ln(J))**2)
 
         # Thermal Form
-        Gradv = outer(v.dx(2),E3) + outer(vg1,E1) + outer(vg2,E2)
+        Gradv = outer(v.dx(0),E1) + outer(vg1,E2) + outer(vg2,E3)
         S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
-        ThermalFLoc = -weight*(dT.dx(2) * thermalcond * T.dx(2))*dx + weight*dT*1.0*dx
+        ThermalFLoc = -weight*(dT.dx(0) * thermalcond * T.dx(0))*dx + weight*dT*1.0*dx
 
         # Electrical Potential
-        VoltageFLoc = weight*( -inner(dVol.dx(2), em_sig*Vol.dx(2)) - inner(dVol.dx(2)*E3,em_sig*(F.T*cross(v,em_B))) )*dx
+        VoltageFLoc = weight*( -inner(dVol.dx(0), em_sig*Vol.dx(0)) - inner(dVol.dx(0)*E1,em_sig*(F.T*cross(v,em_B))) )*dx
         # Current force
-        em_I = em_sig*Vol.dx(2)
-        ey = (E3+r.dx(2)) /sqrt( inner(E3+r.dx(2),E3+r.dx(2)))
+        em_I = em_sig*Vol.dx(0)
+        ey = (E1+r.dx(0)) /sqrt( inner(E1+r.dx(0),E1+r.dx(0)) )
 
+        FExtCont = -em_I*inner(dv,cross(ey,em_B))
         FLocCont = weight*derivative(-PsiCont,wx,dw)*dx+weight*FExtCont*dx+weight*inner(dv,-1.0e-2*v)*dx + ThermalFLoc + VoltageFLoc
         
         # Add up the forms
@@ -107,7 +112,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
                       conditional(ge(overlap,0.0),-200.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Finalize and make derivatives
-    Fform = -derivative(Psi,wx,dw)*dx + FExt*dx + ContactForm #- Mass*dx
+    Fform = -derivative(Psi,wx,dw)*dx + FExt + ContactForm #- Mass*dx
     Mform = Mass*dx + ThermalMass
     AXform = derivative(Fform,wx,Delw)
     AVform = derivative(Fform,wv,Delw)

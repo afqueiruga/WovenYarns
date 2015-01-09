@@ -3,6 +3,7 @@ import numpy as np
 
 from BeamForm import BeamForm
 from ThermalForm import ThermalForm
+from MultiphysicsForm import MultiphysicsForm
 
 """
 
@@ -19,10 +20,27 @@ class Fibril():
         self.mesh=mesh
         self.current_mesh = Mesh(mesh)
         self.V = VectorFunctionSpace(mesh,"CG",1)
-        self.W = MixedFunctionSpace([self.V,self.V,self.V])
+        self.S = FunctionSpace(mesh,"CG",1)
+        self.W = MixedFunctionSpace([self.V,self.V,self.V,self.S,self.S])
         if wx and wv:
             build_form(wx,wv)
-        self.S = FunctionSpace(mesh,"CG",1)
+
+    def build_multi_form(self,wx=None,wv=None):
+        if not wx and not wv:
+            self.wx = Function(self.W)
+            self.wv = Function(self.W)
+        else:
+            self.wx = Function(wx)
+            self.wv = Function(wv)
+
+        self.X0 = Function(self.V)
+        self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
+        
+        self.Fform,self.Mform,self.AXform,self.AVform = \
+          MultiphysicsForm(self.W,self.V,self.S,self.wx,self.wv,self.X0)
+
+        self.Height = 1.0
+        self.Width = 0.5
         
     def build_form(self,wx=None,wv=None):
         if not wx and not wv:

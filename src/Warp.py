@@ -27,7 +27,7 @@ class Warp():
             me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
             fib = Fibril(me)
             self.fibrils.append( fib )
-            self.CMM.add( fib.mesh)
+            self.CMM.add( fib.mesh )
             self.mmfs.add( fib.W )
             self.mdof.add( fib.W.dofmap() )
             self.Tmmfs.add( fib.S )
@@ -44,7 +44,7 @@ class Warp():
         self.wv = MultiMeshFunction(self.mmfs)
 
         for i,fib in enumerate( self.fibrils ):
-            fib.build_form() #self.wx.part(i),self.wv.part(i))
+            fib.build_multi_form() #self.wx.part(i),self.wv.part(i))
             # Initialize the position (zero for now, but I want it to be x)
             # temp = Function(self.fibrils[i].V)
             # temp.interpolate(Expression(("0.0","0.0","0.0")))
