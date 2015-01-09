@@ -76,31 +76,39 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
         
         MassCont = inner(dv,rho*dvdt)
         PsiCont = Constant(weight)*((mu/2)*(Ic - 3) - mu*ln(J) + (lmbda/2)*(ln(J))**2)
-        # VelocityCont = inner(du,v)
-        FExtCont = inner(dv,Constant((0.00,0.0,0.0)))
-        FExtCont += inner(dv,-0.000001*v)
+
+        # Thermal Form
+        Gradv = outer(v.dx(2),E3) + outer(vg1,E1) + outer(vg2,E2)
+        S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
+        ThermalFLoc = -weight*(dT.dx(2) * thermalcond * T.dx(2))*dx + weight*dT*1.0*dx
+
+        # Electrical Potential
+        VoltageFLoc = weight*( -inner(dVol.dx(2), em_sig*Vol.dx(2)) - inner(dVol.dx(2)*E3,em_sig*(F.T*cross(v,em_B))) )*dx
+        # Current force
+        em_I = em_sig*Vol.dx(2)
+        ey = (E3+r.dx(2)) /sqrt( inner(E3+r.dx(2),E3+r.dx(2)))
+
+        FLocCont = weight*derivative(-PsiCont,wx,dw)*dx+weight*FExtCont*dx+weight*inner(dv,-1.0e-2*v)*dx + ThermalFLoc + VoltageFLoc
         
-        # Psi += PsiCont
-        # Mass += MassCont
-        # Velocity += VelocityCont
-        # FExt += FExtCont
-        # construct = lambda f,fcont:
+        # Add up the forms
         Psi = PsiCont if Psi is None else Psi + PsiCont
         Mass = MassCont if Mass is None else Mass + MassCont
-        FExt = FExtCont if FExt is None else FExt + FExtCont
+        FExt = FLocCont if FExt is None else FExt + FLocCont
         # Velocity = VelocityCont if Velocity is None else Velocity + VelocityCont
 
+    # Thermal mass doesn't need to be integrated
     ThermalMass = inner(dT,rho*dTdt)*dx
+
+    # Contact forms
     xr = X0 + r
     dist = sqrt(dot(jump(xr),jump(xr)))
     overlap = (Constant(0.05)-dist)
     ContactForm = -dot(jump(dvr),
                       conditional(ge(overlap,0.0),-200.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
-    
+    # Finalize and make derivatives
     Fform = -derivative(Psi,wx,dw)*dx + FExt*dx + ContactForm #- Mass*dx
-    Mform = Mass*dx #derivative(F,dwdt,Deldwdt)
+    Mform = Mass*dx + ThermalMass
     AXform = derivative(Fform,wx,Delw)
     AVform = derivative(Fform,wv,Delw)
-    
     return Form(Fform),Form(Mform),Form(AXform),Form(AVform)
