@@ -27,7 +27,7 @@ class Warp():
             me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
             fib = Fibril(me)
             self.fibrils.append( fib )
-            self.CMM.add( fib.mesh)
+            self.CMM.add( fib.mesh )
             self.mmfs.add( fib.W )
             self.mdof.add( fib.W.dofmap() )
             self.Tmmfs.add( fib.S )
@@ -44,7 +44,7 @@ class Warp():
         self.wv = MultiMeshFunction(self.mmfs)
 
         for i,fib in enumerate( self.fibrils ):
-            fib.build_form() #self.wx.part(i),self.wv.part(i))
+            fib.build_multi_form() #self.wx.part(i),self.wv.part(i))
             # Initialize the position (zero for now, but I want it to be x)
             # temp = Function(self.fibrils[i].V)
             # temp.interpolate(Expression(("0.0","0.0","0.0")))
@@ -263,7 +263,21 @@ class Warp():
         # bcright.apply(self.AX,self.R)
         bcall.apply(self.AT,self.RT)
         bcright.apply(self.AT,self.RT)
+    def apply_multi_bcs(self,uend=None):
+        zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0))
+        if not uend:
+            extend = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,1.0))
+        else:
+            extend = uend
 
+        left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -10.0)
+        bcleft = MultiMeshDirichletBC(self.mmfs, zero, left)
+        right = CompiledSubDomain("near(x[0], side) && near(x[2], -1.0) && on_boundary", side = 10.0)
+        bcright = MultiMeshDirichletBC(self.mmfs, extend, right)
+
+        bcleft.apply(self.AX,self.R)
+        bcright.apply(self.AX,self.R)
+        
     def apply_bcs(self,uend=None):
         zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
         if not uend:
