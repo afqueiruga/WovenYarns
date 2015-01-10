@@ -293,3 +293,8 @@ class Warp():
         bcleft.apply(self.AX,self.R)
         bcright.apply(self.AX,self.R)
         pass
+
+    def update(self):
+        " Push the global vector into the individual fibril vectors "
+        for i,fib in enumerate(self.fibrils):
+            fib.wx.vector()[:] = self.wx.vector()[ self.mdof.part(i).dofs() ]
