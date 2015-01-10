@@ -11,10 +11,11 @@ RK_a = np.array([ [RK_alpha, 0.0],
                   [1.0-RK_alpha, RK_alpha] ], dtype=np.double)
 
 class DIRK_Monolithic():
-    def __init__(self,warp,sysass,update,h):
+    def __init__(self,warp,sysass,update,bcapp,h):
         self.warp = warp
         self.sysass = sysass
         self.update = update
+        self.bcapp = bcapp
         self.h = h
 
         self.X0 = MultiMeshFunction(warp.mmfs)
@@ -45,8 +46,8 @@ class DIRK_Monolithic():
 
                 K = self.warp.M - h*h*RK_a[i,i]**2*self.warp.AX - h*RK_a[i,i]*self.warp.AV
                 R = Rhat - self.warp.M*self.warp.wv.vector() + h*float(RK_a[i,i])*self.warp.R
-                # for bc in bcs:
-                #     bc.apply(K,R)
+                self.bcapp(K,R,itcnt!=0)
+
                 print "  Solving..."
                 solve(K,self.DelW.vector(),R)
                 eps=np.linalg.norm(self.DelW.vector().array(), ord=np.Inf)
