@@ -298,3 +298,4 @@ class Warp():
         " Push the global vector into the individual fibril vectors "
         for i,fib in enumerate(self.fibrils):
             fib.wx.vector()[:] = self.wx.vector()[ self.mdof.part(i).dofs() ]
+            fib.wv.vector()[:] = self.wv.vector()[ self.mdof.part(i).dofs() ]

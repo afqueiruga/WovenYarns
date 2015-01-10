@@ -112,7 +112,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
                       conditional(ge(overlap,0.0),-200.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Finalize and make derivatives
-    Fform = -derivative(Psi,wx,dw)*dx + FExt + ContactForm #- Mass*dx
+    Fform =  FExt + ContactForm #-derivative(Psi,wx,dw)*dx - Mass*dx
     Mform = Mass*dx + ThermalMass
     AXform = derivative(Fform,wx,Delw)
     AVform = derivative(Fform,wv,Delw)
