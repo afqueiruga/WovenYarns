@@ -42,9 +42,10 @@ def apply_BCs(K,R,hold=False):
 # Assemble once to get M
 warp.assemble_mass()
 
-Tmax = 200.0
+Tmax = 50.0
 
-NTS = [25]#,50] #,100,250,500,1000,2000,3000,4000]
+NTS = [250,500,2000,3000,4000]
+orders = [1,2,3]
 
 all_series = []
 probes = [ (np.array([0.0,0.0,-1.0],dtype=np.double),1,'x'),
@@ -53,7 +54,7 @@ probes = [ (np.array([0.0,0.0,-1.0],dtype=np.double),1,'x'),
             (np.array([5.0,0.0,-1.0],dtype=np.double),10,'v')]
 weval = np.zeros(11)
 
-for NT in NTS:
+def solve(order,NT):
     h = Tmax/NT
     time_series = np.zeros((NT+1,len(probes)))
     times = np.zeros(NT+1)
@@ -67,7 +68,7 @@ for NT in NTS:
         warp.wv.vector()[ warp.mdof.part(i).dofs() ] = fib.wv.vector()[:]
         time_series[0] = 0.0
     
-    dirk = DIRK_Monolithic(warp, warp.assemble_system, warp.update, apply_BCs, h)
+    dirk = DIRK_Monolithic(order, h, warp, warp.assemble_system, warp.update, apply_BCs)
 
     for t in xrange(NT):
         dirk.march()
@@ -79,22 +80,25 @@ for NT in NTS:
             time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
         # warp.output_states("../post/fibril_time_{0}_"+str(t)+".pvd",1)
-    all_series.append((times,time_series))
+    return (times,time_series,order,h)
 
 
+for order in orders:
+    for NT in NTS:
+        all_series.append( solve(order,NT) )
 
-# for g in xrange(len(probes)):
-#     plt.figure()
-#     for ts,ys in all_series:
-#         plt.plot(ts,ys[:,g])
-# for g in xrange(len(probes)):
-#     plt.figure()
-#     plt.plot([ x[0][1]-x[0][0] for x in all_series],
-#              [ x[1][-1,g] for x in all_series ])
-# for g in xrange(len(probes)):
-#         plt.figure()
-#         plt.loglog([ x[0][1]-x[0][0] for x in all_series],
-#                  [ np.abs(x[1][-1,g]-all_series[-1][1][-1,g]) for x in all_series ],'-+')
+for g in xrange(len(probes)):
+    plt.figure()
+    for ts,ys in all_series:
+        plt.plot(ts,ys[:,g])
+for g in xrange(len(probes)):
+    plt.figure()
+    plt.plot([ x[0][1]-x[0][0] for x in all_series],
+             [ x[1][-1,g] for x in all_series ])
+for g in xrange(len(probes)):
+        plt.figure()
+        plt.loglog([ x[0][1]-x[0][0] for x in all_series],
+                 [ np.abs(x[1][-1,g]-all_series[-1][1][-1,g]) for x in all_series ],'-+')
 
-# plt.show()
-# embed()
+plt.show()
+embed()
