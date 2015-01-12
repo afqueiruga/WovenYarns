@@ -42,15 +42,15 @@ def apply_BCs(K,R,hold=False):
 # Assemble once to get M
 warp.assemble_system()
 
-Tmax = 100.0
+Tmax = 200.0
 
 NTS = [25,50,100,250,500,1000,2000,3000,4000]
 
 all_series = []
-probes = [(np.array([0.0,0.0,-1.0],dtype=np.double),1),
-          (np.array([5.0,0.0,-1.0],dtype=np.double),2),
-          (np.array([5.0,0.0,-1.0],dtype=np.double),9),
-          (np.array([5.0,0.0,-1.0],dtype=np.double),10),]
+probes = [ (np.array([0.0,0.0,-1.0],dtype=np.double),1,'x'),
+            (np.array([5.0,0.0,-1.0],dtype=np.double),2,'x'),
+            (np.array([5.0,0.0,-1.0],dtype=np.double),9,'v'),
+            (np.array([5.0,0.0,-1.0],dtype=np.double),10,'v')]
 weval = np.zeros(11)
 
 for NT in NTS:
@@ -72,7 +72,10 @@ for NT in NTS:
     for t in xrange(NT):
         dirk.march()
         for g,p in enumerate(probes):
-            warp.fibrils[0].wx.eval(weval,p[0])
+            if p[2]=='x':
+                warp.fibrils[0].wx.eval(weval,p[0])
+            else:
+                warp.fibrils[0].wv.eval(weval,p[0])
             time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
         # warp.output_states("../post/fibril_time_{0}_"+str(t)+".pvd",1)
