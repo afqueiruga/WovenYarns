@@ -151,13 +151,12 @@ class Warp():
         self.MT = M
         self.AT = AX
         self.RT = R
-        
-    def assemble_system(self):
+    def assemble_mass(self):
         from BroadcastAssembler import BroadcastAssembler
         gN = self.mdof.global_dimension()
         dim = np.array([gN,gN],dtype=np.intc)
         local_dofs = np.array([0,gN,0,gN],dtype=np.intc)
-
+        
         M = Matrix()
         assem = BroadcastAssembler()
         assem.init_global_tensor(M,dim,2,0, local_dofs, self.mdof.off_process_owner())
@@ -168,6 +167,14 @@ class Warp():
             assem.assemble_form(self.fibrils[i].Mform, self.mdof.part(i))
         M.apply('add')
         
+        self.M = M
+
+    def assemble_system(self):
+        from BroadcastAssembler import BroadcastAssembler
+        gN = self.mdof.global_dimension()
+        dim = np.array([gN,gN],dtype=np.intc)
+        local_dofs = np.array([0,gN,0,gN],dtype=np.intc)
+
         AX = Matrix()
         assem = BroadcastAssembler()
         assem.init_global_tensor(AX,dim,2,0, local_dofs, self.mdof.off_process_owner())
@@ -239,7 +246,6 @@ class Warp():
                                      cp.chi_n_max)
         R.apply('add')
         
-        self.M = M
         self.AX = AX
         self.AV = AV
         self.R = R

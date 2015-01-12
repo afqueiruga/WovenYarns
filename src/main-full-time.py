@@ -40,11 +40,11 @@ def apply_BCs(K,R,hold=False):
 
 
 # Assemble once to get M
-warp.assemble_system()
+warp.assemble_mass()
 
 Tmax = 200.0
 
-NTS = [25,50,100,250,500,1000,2000,3000,4000]
+NTS = [25]#,50] #,100,250,500,1000,2000,3000,4000]
 
 all_series = []
 probes = [ (np.array([0.0,0.0,-1.0],dtype=np.double),1,'x'),
@@ -83,18 +83,18 @@ for NT in NTS:
 
 
 
-for g in xrange(len(probes)):
-    plt.figure()
-    for ts,ys in all_series:
-        plt.plot(ts,ys[:,g])
-for g in xrange(len(probes)):
-    plt.figure()
-    plt.plot([ x[0][1]-x[0][0] for x in all_series],
-             [ x[1][-1,g] for x in all_series ])
-for g in xrange(len(probes)):
-        plt.figure()
-        plt.loglog([ x[0][1]-x[0][0] for x in all_series],
-                 [ np.abs(x[1][-1,g]-all_series[-1][1][-1,g]) for x in all_series ],'-+')
+# for g in xrange(len(probes)):
+#     plt.figure()
+#     for ts,ys in all_series:
+#         plt.plot(ts,ys[:,g])
+# for g in xrange(len(probes)):
+#     plt.figure()
+#     plt.plot([ x[0][1]-x[0][0] for x in all_series],
+#              [ x[1][-1,g] for x in all_series ])
+# for g in xrange(len(probes)):
+#         plt.figure()
+#         plt.loglog([ x[0][1]-x[0][0] for x in all_series],
+#                  [ np.abs(x[1][-1,g]-all_series[-1][1][-1,g]) for x in all_series ],'-+')
 
-plt.show()
-embed()
+# plt.show()
+# embed()
