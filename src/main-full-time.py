@@ -43,14 +43,21 @@ def apply_BCs(K,R,hold=False):
 warp.assemble_system()
 
 Tmax = 100.0
-weval = np.zeros(11)
-all_series = []
-hs = [2.0,3.0,4.0]
 
-for h in hs:
-    NT = int(Tmax/h)
-    time_series = np.zeros(NT+1)
+NTS = [25,50,100,250,500,1000,2000,3000,4000]
+
+all_series = []
+probes = [(np.array([0.0,0.0,-1.0],dtype=np.double),1),
+          (np.array([5.0,0.0,-1.0],dtype=np.double),2),
+          (np.array([5.0,0.0,-1.0],dtype=np.double),9),
+          (np.array([5.0,0.0,-1.0],dtype=np.double),10),]
+weval = np.zeros(11)
+
+for NT in NTS:
+    h = Tmax/NT
+    time_series = np.zeros((NT+1,len(probes)))
     times = np.zeros(NT+1)
+    
     for i,fib in enumerate(warp.fibrils):
         fib.wx.interpolate(Expression(("0.0","0.0","0.0", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
                             "0.0", "0.0")))
@@ -59,18 +66,32 @@ for h in hs:
         warp.wx.vector()[ warp.mdof.part(i).dofs() ] = fib.wx.vector()[:]
         warp.wv.vector()[ warp.mdof.part(i).dofs() ] = fib.wv.vector()[:]
         time_series[0] = 0.0
+    
     dirk = DIRK_Monolithic(warp, warp.assemble_system, warp.update, apply_BCs, h)
-    # embed()
+
     for t in xrange(NT):
         dirk.march()
-
-        warp.fibrils[0].wx.eval(weval,np.array([0.0,0.0,-1.0],dtype=np.double))
-        time_series[t+1] = weval[1]
+        for g,p in enumerate(probes):
+            warp.fibrils[0].wx.eval(weval,p[0])
+            time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
         # warp.output_states("../post/fibril_time_{0}_"+str(t)+".pvd",1)
     all_series.append((times,time_series))
 
-for ts,ys in all_series:
-    plt.plot(ts,ys)
+
+
+for g in xrange(len(probes)):
+    plt.figure()
+    for ts,ys in all_series:
+        plt.plot(ts,ys[:,g])
+for g in xrange(len(probes)):
+    plt.figure()
+    plt.plot([ x[0][1]-x[0][0] for x in all_series],
+             [ x[1][-1,g] for x in all_series ])
+for g in xrange(len(probes)):
+        plt.figure()
+        plt.loglog([ x[0][1]-x[0][0] for x in all_series],
+                 [ np.abs(x[1][-1,g]-all_series[-1][1][-1,g]) for x in all_series ],'-+')
+
 plt.show()
 embed()
