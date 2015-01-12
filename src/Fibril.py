@@ -83,14 +83,18 @@ class Fibril():
         from multiwriter.multiwriter import VTKAppender
         vfile = VTKAppender(fname,"ascii")
 
-        q,h1,h2    = self.wx.split()
-        vq,vh1,vh2 = self.wv.split()
+        q,h1,h2, Tnull, Vnull    = self.wx.split()
+        vq,vh1,vh2,T,Vol = self.wv.split()
         q.rename("q","field")
         h1.rename("h1","field")
         h2.rename("h2","field")
+
+                
         vq.rename("vq","field")
         vh1.rename("vh1","field")
         vh2.rename("vh2","field")
+        T.rename("T","field")
+        Vol.rename("Vol","field")
         # q1 = Function(V)
         # q1.interpolate(Height/2.0*Constant((0.0,1.0,0.0))+h1)
         # q2 = Function(V)
@@ -100,9 +104,9 @@ class Fibril():
         q2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
         q2.rename("q2","field")
 
-        self.T.rename("T","field")
+        # self.T.rename("T","field")
         self.X0.rename("X0","field")
-        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, self.T, self.X0],[])
+        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, T, Vol,self.X0],[])
         # vfile = VTKAppender(fname,"ascii")
 
     def close_file(self):
