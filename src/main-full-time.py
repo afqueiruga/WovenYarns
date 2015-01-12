@@ -42,12 +42,8 @@ def apply_BCs(K,R,hold=False):
 # Assemble once to get M
 warp.assemble_mass()
 
-Tmax = 50.0
+Tmax = 40.0
 
-NTS = [250,500,2000,3000,4000]
-orders = [1,2,3]
-
-all_series = []
 probes = [ (np.array([0.0,0.0,-1.0],dtype=np.double),1,'x'),
             (np.array([5.0,0.0,-1.0],dtype=np.double),2,'x'),
             (np.array([5.0,0.0,-1.0],dtype=np.double),9,'v'),
@@ -80,25 +76,36 @@ def solve(order,NT):
             time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
         # warp.output_states("../post/fibril_time_{0}_"+str(t)+".pvd",1)
-    return (times,time_series,order,h)
+    return (times,time_series,h,order)
 
+
+NTS = [50,100,250,500,1000,2000]
+orders = [1,2,3]
+all_series = []
 
 for order in orders:
+    results = []
     for NT in NTS:
-        all_series.append( solve(order,NT) )
+        results.append( solve(order,NT) )
+    all_series.append( (order, results) )
+embed()
+for g in xrange(len(probes)):
+    plt.figure()
+    for series in all_series:
+        for ts,ys,o,h in series[1]:
+            plt.plot(ts,ys[:,g])
+    plt.figure()
+    exact = all_series[-1][1][-1][1][-1,g]
+    for series in all_series:
+        plt.loglog([ x[2] for x in series[1]],
+                    [ np.abs(x[1][-1,g]-exact) for x in series[1] ],'-+')
 
-for g in xrange(len(probes)):
-    plt.figure()
-    for ts,ys in all_series:
-        plt.plot(ts,ys[:,g])
-for g in xrange(len(probes)):
-    plt.figure()
-    plt.plot([ x[0][1]-x[0][0] for x in all_series],
-             [ x[1][-1,g] for x in all_series ])
-for g in xrange(len(probes)):
-        plt.figure()
-        plt.loglog([ x[0][1]-x[0][0] for x in all_series],
-                 [ np.abs(x[1][-1,g]-all_series[-1][1][-1,g]) for x in all_series ],'-+')
+#for g in xrange(len(probes)):
+#    plt.figure()
+#   plt.plot([ x[0][1]-x[0][0] for x in all_series],
+#             [ x[1][-1,g] for x in all_series ])
 
 plt.show()
+import cPickle
+cPickle.dump(all_series,open("convergence.p","wb"))
 embed()
