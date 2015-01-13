@@ -79,9 +79,9 @@ def solve(order,NT):
     return (times,time_series,h,order)
 
 
-NTS = [50,100,250,500,1000,2000]
+NTS = [3000,4000,5000]#[50,100,250,500,1000,2000]
 orders = [1,2,3]
-all_series = []
+all_series = [ ]
 
 for order in orders:
     results = []
@@ -89,17 +89,29 @@ for order in orders:
         results.append( solve(order,NT) )
     all_series.append( (order, results) )
 embed()
-for g in xrange(len(probes)):
-    plt.figure()
-    for series in all_series:
-        for ts,ys,o,h in series[1]:
-            plt.plot(ts,ys[:,g])
-    plt.figure()
-    exact = all_series[-1][1][-1][1][-1,g]
-    for series in all_series:
-        plt.loglog([ x[2] for x in series[1]],
-                    [ np.abs(x[1][-1,g]-exact) for x in series[1] ],'-+')
 
+def make_plots(all_series):
+    for g in xrange(len(probes)):
+        plt.figure()
+        for series in all_series:
+            for ts,ys,o,h in series[1]:
+                plt.plot(ts,ys[:,g])
+        plt.figure()
+        exact = all_series[-1][1][-1][1][-1,g]
+        for series in all_series:
+            plt.loglog([ x[2] for x in series[1]],
+                        [ np.abs(x[1][-1,g]-exact) for x in series[1] ],'-+')
+
+def compute_convergence(all_series):
+    import scipy.stats
+    for g in xrange(len(probes)):
+        exact = all_series[-1][1][-1][1][-1,g]
+        for ix,series in enumerate(all_series):
+        
+            print (scipy.stats.linregress([ np.log(x[2]) for x in series[1][:(-1 if ix==len(all_series)-1 else -2)] ],
+                                                [ np.log(np.abs(x[1][-1,g]-exact)) for x in series[1][:(-1 if ix==len(all_series)-1 else -2)] ]))[0],
+        print ""
+        
 #for g in xrange(len(probes)):
 #    plt.figure()
 #   plt.plot([ x[0][1]-x[0][0] for x in all_series],
@@ -107,5 +119,5 @@ for g in xrange(len(probes)):
 
 plt.show()
 import cPickle
-cPickle.dump(all_series,open("convergence.p","wb"))
+cPickle.dump(all_series,open("convergence1.p","wb"))
 embed()
