@@ -79,8 +79,8 @@ def solve(order,NT):
     return (times,time_series,h,order)
 
 
-NTS = [3000,4000,5000]#[50,100,250,500,1000,2000]
-orders = [1,2,3]
+NTS = [50] #[3000,4000,5000]#[50,100,250,500,1000,2000]
+orders = [1] #,2,3]
 all_series = [ ]
 
 for order in orders:

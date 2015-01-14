@@ -6,7 +6,7 @@ The form for the beam element with thermal and EM problems in it.
 
 from dolfin import *
 
-def MultiphysicsForm(W,V,S,wx,wv,X0):
+def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
     vr,vg1,vg2,T,Vol = split(wv)
     r,g1,g2,Tnull,Vnull = split(wx)
 
@@ -25,15 +25,23 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
     mu_alpha = Constant(-0.03)
     rho = Constant(1.0)
     thermalcond = Constant(1.0)
-    Height = 2.5
+    Height = 1.0
     Width = 1.0
 
-    em_B = Constant((0.1,0.0,1.0))
+    em_B = Constant((0.0,0.0,0.0)) #Constant((0.0,1.0,0.0))
     # em_I = Constant(1.0/Height/Width)
     em_sig = Constant(10.0)
 
-    E1,E2,E3 = \
+    print orientation
+    if orientation == 0:
+        Ez,E1,E2 = \
         Constant((1.0,0.0,0.0)),Constant((0.0,1.0,0.0)),Constant((0.0,0.0,1.0))
+    elif orientation == 1:
+        Ez,E1,E2 = \
+       Constant((0.0,1.0,0.0)),Constant((0.0,0.0,1.0)), Constant((1.0,0.0,0.0))
+    else:
+        Ez,E1,E2 = \
+        Constant((0.0,0.0,1.0)), Constant((1.0,0.0,0.0)),Constant((0.0,1.0,0.0))
 
     #
     # Gauss points
@@ -70,7 +78,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
         dVol = derivative(Vol,wv,dw)
         
         I = Identity(V.cell().geometric_dimension())
-        F = I + outer(u.dx(0),Constant((1.0,0.0,0.0))) + outer(g1,Constant((0.0,1.0,0.0))) + outer(g2,Constant( (0.0,0.0,1.0) ))
+        F = I + outer(u.dx(orientation),Ez) + outer(g1,E1) + outer(g2, E2 )
         C = F.T*F
         Ic = tr(C)
         J = det(F)
@@ -82,18 +90,18 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
         PsiCont = Constant(weight)*((mu_pt/2)*(Ic - 3) - mu_pt*ln(J) + (lmbda/2)*(ln(J))**2)
 
         # Thermal Form
-        Gradv = outer(v.dx(0),E1) + outer(vg1,E2) + outer(vg2,E3)
+        Gradv = outer(v.dx(orientation),Ez) + outer(vg1,E1) + outer(vg2,E2)
         S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
-        ThermalFLoc = -weight*(dT.dx(0) * thermalcond * T.dx(0))*dx + weight*dT*1.0*dx
+        ThermalFLoc = -weight*(dT.dx(orientation) * thermalcond * T.dx(orientation))*dx + weight*dT*1.0*dx
 
         # Electrical Potential
-        VoltageFLoc = weight*( -inner(dVol.dx(0), em_sig*Vol.dx(0)) - inner(dVol.dx(0)*E1,em_sig*(F.T*cross(v,em_B))) )*dx
+        VoltageFLoc = weight*( -inner(dVol.dx(orientation), em_sig*Vol.dx(orientation)) - inner(dVol.dx(orientation)*Ez,em_sig*(F.T*cross(v,em_B))) )*dx
         # Current force
         em_I = em_sig*Vol.dx(0)
-        ey = (E1+r.dx(0)) /sqrt( inner(E1+r.dx(0),E1+r.dx(0)) )
+        ey = (Ez+r.dx(orientation)) /sqrt( inner(Ez+r.dx(orientation),Ez+r.dx(orientation)) )
 
         FExtCont = -em_I*inner(dv,cross(ey,em_B))
-        FLocCont = weight*derivative(-PsiCont,wx,dw)*dx+weight*FExtCont*dx+weight*inner(dv,-1.0e-2*v)*dx + ThermalFLoc + VoltageFLoc
+        FLocCont = weight*derivative(-PsiCont,wx,dw)*dx+weight*FExtCont*dx+weight*inner(dv,-1.0e-1*v)*dx + ThermalFLoc + VoltageFLoc
         
         # Add up the forms
         Psi = PsiCont if Psi is None else Psi + PsiCont
@@ -107,9 +115,9 @@ def MultiphysicsForm(W,V,S,wx,wv,X0):
     # Contact forms
     xr = X0 + r
     dist = sqrt(dot(jump(xr),jump(xr)))
-    overlap = (Constant(0.05)-dist)
+    overlap = (Constant(0.1)-dist)
     ContactForm = -dot(jump(dvr),
-                      conditional(ge(overlap,0.0),-200.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                      conditional(ge(overlap,0.0),-2000000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Finalize and make derivatives
     Fform =  FExt + ContactForm #-derivative(Psi,wx,dw)*dx - Mass*dx

@@ -49,7 +49,8 @@ class ContactPair():
         chi_s_table =    np.zeros([npairs*self.chi_n_max,2],dtype=np.double)
         chi_X_table =    np.zeros([npairs*self.chi_n_max,6],dtype=np.double)
         chi_dist_table = np.ones([npairs*self.chi_n_max],dtype=np.double)
-        truncate = np.vectorize(lambda x: 0.1 if x<0.1 else 0.9 if x>0.9 else x, otypes=[np.double])
+        # truncate = np.vectorize(lambda x: 0.1 if x<0.1 else 0.9 if x>0.9 else x, otypes=[np.double])
+        truncate = np.vectorize(lambda x: 0.0 if x<0.0 else 1.0 if x>1.0 else x, otypes=[np.double])
 
         lda = self.chi_n_max
         for i,(mid,sid) in enumerate(pair_table):

@@ -24,8 +24,16 @@ class Warp():
         self.Tmdof = MultiMeshDofMap()
         self.Tmmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
-            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
-            fib = Fibril(me)
+            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 25)
+            E = np.array(pts[1])- np.array(pts[0])
+            if E[1]==0.0 and E[2]==0.0:
+                orientation=0
+            if E[0]==0.0 and E[2]==0.0:
+                orientation=1
+            if E[0]==0.0 and E[1]==0.0:
+                orientation=2
+            print orientation
+            fib = Fibril(me,orientation)
             self.fibrils.append( fib )
             self.CMM.add( fib.mesh )
             self.mmfs.add( fib.W )
@@ -151,6 +159,7 @@ class Warp():
         self.MT = M
         self.AT = AX
         self.RT = R
+        
     def assemble_mass(self):
         from BroadcastAssembler import BroadcastAssembler
         gN = self.mdof.global_dimension()
@@ -199,7 +208,6 @@ class Warp():
                                      cp.chi_X_table.flatten(),
                                      cp.chi_n_max)
         AX.apply('add')
-
         AV = Matrix()
         assem = BroadcastAssembler()
         assem.init_global_tensor(AV,dim,2,0, local_dofs, self.mdof.off_process_owner())
