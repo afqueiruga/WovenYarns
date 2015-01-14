@@ -25,7 +25,15 @@ class Warp():
         self.Tmmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
             me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
-            fib = Fibril(me)
+            E = np.array(pts[1])- np.array(pts[0])
+            if E[1]==0.0 and E[2]==0.0:
+                orientation=0
+            if E[0]==0.0 and E[2]==0.0:
+                orientation=1
+            if E[0]==0.0 and E[1]==0.0:
+                orientation=2
+            print orientation
+            fib = Fibril(me,orientation)
             self.fibrils.append( fib )
             self.CMM.add( fib.mesh )
             self.mmfs.add( fib.W )

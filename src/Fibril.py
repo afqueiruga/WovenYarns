@@ -12,7 +12,7 @@ This is a base class for the director-based Fibril
 """
 from IPython import embed
 class Fibril():
-    def __init__(self,mesh,wx=None,wv=None):
+    def __init__(self,mesh,orientation=0,wx=None,wv=None):
         """
         Create a new Fibril on a given mesh. It better be a line mesh.
         Dirrichlet BCs by default.
@@ -24,6 +24,7 @@ class Fibril():
         self.W = MixedFunctionSpace([self.V,self.V,self.V,self.S,self.S])
         if wx and wv:
             build_form(wx,wv)
+        self.orientation=orientation
 
     def build_multi_form(self,wx=None,wv=None):
         if not wx and not wv:
@@ -37,7 +38,7 @@ class Fibril():
         self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
         
         self.Fform,self.Mform,self.AXform,self.AVform = \
-          MultiphysicsForm(self.W,self.V,self.S,self.wx,self.wv,self.X0)
+          MultiphysicsForm(self.W,self.V,self.S,self.wx,self.wv,self.X0, self.orientation)
 
         self.Height = 1.0
         self.Width = 0.5
