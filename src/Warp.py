@@ -208,7 +208,6 @@ class Warp():
                                      cp.chi_X_table.flatten(),
                                      cp.chi_n_max)
         AX.apply('add')
-
         AV = Matrix()
         assem = BroadcastAssembler()
         assem.init_global_tensor(AV,dim,2,0, local_dofs, self.mdof.off_process_owner())

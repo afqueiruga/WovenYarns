@@ -18,9 +18,9 @@ from DIRK import DIRK_Monolithic
 
 endpts = [
     [ [ 1.0,-10.0, -0.1],  [ 1.0,10.0,  -0.1] ],
-    [ [ 0.0,-10.0, -0.1],  [ 0.0,10.0,  -0.1] ],
-    [ [-10.0, 0.2,-0.05],  [10.0, 0.2, -0.05] ] ,
-    [ [-10.0, -0.2,-0.05],  [10.0, -0.2, -0.05] ] ]
+    [ [ 0.1,-10.0, -0.1],  [ 0.1,10.0,  -0.1] ],
+    [ [-10.0, 0.05,-0.05],  [10.0, 0.05, -0.05] ] ,
+    [ [-10.0, -0.02,-0.05],  [10.0, -0.02, -0.05] ] ]
 
 warp = Warp(endpts)
 
@@ -45,10 +45,10 @@ def apply_BCs(K,R,hold=False):
 
 # Assemble once to get M
 warp.assemble_mass()
-probes = [ (np.array([0.0,0.0,-0.05],dtype=np.double),1,'x'),
-            (np.array([5.0,0.0,-0.05],dtype=np.double),2,'x'),
-            (np.array([5.0,0.0,-0.05],dtype=np.double),9,'v'),
-            (np.array([5.0,0.0,-0.05],dtype=np.double),10,'v')]
+probes = [ (np.array([0.0,0.05,-0.05],dtype=np.double),1,'x'),
+            (np.array([5.0,0.05,-0.05],dtype=np.double),2,'x'),
+            (np.array([5.0,0.05,-0.05],dtype=np.double),9,'v'),
+            (np.array([5.0,0.05,-0.05],dtype=np.double),10,'v')]
 weval = np.zeros(11)
 Tmax=1.0
 
