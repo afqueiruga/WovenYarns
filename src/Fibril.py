@@ -42,6 +42,12 @@ class Fibril():
 
         self.Height = 1.0
         self.Width = 1.0
+    def build_thermal_form(self):
+        self.X0 = Function(self.V)
+        self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
+        
+        self.T = Function(self.S)
+        self.FTform, self.MTform, self.ATform = ThermalForm(self.S,self.T,self.X0)
         
     def build_form(self,wx=None,wv=None):
         if not wx and not wv:
@@ -105,9 +111,9 @@ class Fibril():
         q2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
         q2.rename("q2","field")
 
-        # self.T.rename("T","field")
+        self.T.rename("Tself","field")
         self.X0.rename("X0","field")
-        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, T, Vol,self.X0],[])
+        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, T, Vol,self.X0,self.T],[])
         # vfile = VTKAppender(fname,"ascii")
 
     def close_file(self):

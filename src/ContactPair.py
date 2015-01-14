@@ -11,13 +11,13 @@ Only line meshes in 3D currently supported.
 """
 
 class ContactPair():
-    def __init__(self,meA, refA, meB, refB, chi_n_max):
+    def __init__(self,meA, refA, meB, refB, chi_n_max, cutoff=0.3):
         self.meshA = meA
         self.meshB = meB
         self.ref_meshA = refA
         self.ref_meshB = refB
         self.chi_n_max = chi_n_max
-
+        self.cutoff = cutoff
     def make_table(self):
         meA = self.meshA
         meB = self.meshB
@@ -28,7 +28,7 @@ class ContactPair():
         pairs = []
         for i,c in enumerate(cells(meB)):
             # TODO: this needs to be a paramter
-            ent = pt.compute_proximity_collisions(c.midpoint(),1.6)
+            ent = pt.compute_proximity_collisions(c.midpoint(),self.cutoff)
             for e in ent:
                 pairs.append([e,i])
                 

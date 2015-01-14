@@ -12,7 +12,7 @@ class Warp():
 
     Handles assembly, ContactPair management, io, etc.
     """
-    def __init__(self, endpts):
+    def __init__(self, endpts, cutoff=0.3):
         """
         Initialize a warp from a list of end points.
         """
@@ -52,7 +52,9 @@ class Warp():
         self.wv = MultiMeshFunction(self.mmfs)
 
         for i,fib in enumerate( self.fibrils ):
-            fib.build_multi_form() #self.wx.part(i),self.wv.part(i))
+            fib.build_multi_form()
+            fib.build_thermal_form()
+             #self.wx.part(i),self.wv.part(i))
             # Initialize the position (zero for now, but I want it to be x)
             # temp = Function(self.fibrils[i].V)
             # temp.interpolate(Expression(("0.0","0.0","0.0")))
@@ -65,7 +67,7 @@ class Warp():
         # self.mdof.build(self.mmfs, np.array([],dtype=np.intc) )
         
         self.contacts = []
-        
+        self.contact_cutoff = cutoff
     def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
             fib.write_file(fname.format(j),i)
@@ -91,7 +93,7 @@ class Warp():
         self.contacts = []
         for i,p in enumerate(pairs):
             cp = ContactPair(self.fibrils[p[0]].mesh,self.fibrils[p[0]].mesh,
-                             self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,20)
+                             self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,20,self.contact_cutoff)
             cp.make_table()
             self.contacts.append(cp)
 
