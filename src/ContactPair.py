@@ -17,7 +17,7 @@ class ContactPair():
         self.ref_meshA = refA
         self.ref_meshB = refB
         self.chi_n_max = chi_n_max
-        
+
     def make_table(self):
         meA = self.meshA
         meB = self.meshB
@@ -53,28 +53,44 @@ class ContactPair():
         truncate = np.vectorize(lambda x: 0.0 if x<0.0 else 1.0 if x>1.0 else x, otypes=[np.double])
 
         lda = self.chi_n_max
-        for i,(mid,sid) in enumerate(pair_table):
-            xA1 = vertsA[cellsA[mid,0]]
-            xA2 = vertsA[cellsA[mid,1]]
-            xB1 = vertsB[cellsB[sid,0]]
-            xB2 = vertsB[cellsB[sid,1]]
-            
-            XA1 = ref_vertsA[ref_cellsA[mid,0]]
-            XA2 = ref_vertsA[ref_cellsA[mid,1]]
-            XB1 = ref_vertsB[ref_cellsB[sid,0]]
-            XB2 = ref_vertsB[ref_cellsB[sid,1]]
+        def calc_s(istart,iend,xA1,xA2,xB1,xB2,flip=True):
             itr = 0
             delB = xB1-xB2
             denom =    delB.dot(delB)
             constant = ( xA2.dot(delB) - xB2.dot(delB) ) / denom
             linear =   ( xA1.dot(delB) - xA2.dot(delB) ) / denom
-            chi_s_table[i*lda:(i+1)*lda,0] = np.linspace(0.1,0.9,lda)
-            chi_s_table[i*lda:(i+1)*lda,1] = constant + linear * chi_s_table[i*lda:(i+1)*lda,0]
-            chi_s_table[i*lda:(i+1)*lda,1] = truncate(chi_s_table[i*lda:(i+1)*lda,1])
+            
+            chi_s_table[istart:iend, 0 if not flip else 1] = np.linspace(0.0,1.0,lda/2)
+            chi_s_table[istart:iend, 1 if not flip else 0] = truncate(constant + linear * chi_s_table[istart:iend,0 if not flip else 1])
+            
+        def calc_chi(i,mid,sid,offset,
+                     vertsM,cellsM,ref_vertsM,ref_cellsM,
+                     vertsS,cellsS,ref_vertsS,ref_cellsS):
+            xA1 = vertsM[cellsM[mid,0]]
+            xA2 = vertsM[cellsM[mid,1]]
+            xB1 = vertsS[cellsS[sid,0]]
+            xB2 = vertsS[cellsS[sid,1]]
+            
+            XA1 = ref_vertsM[ref_cellsM[mid,0]]
+            XA2 = ref_vertsM[ref_cellsM[mid,1]]
+            XB1 = ref_vertsS[ref_cellsS[sid,0]]
+            XB2 = ref_vertsS[ref_cellsS[sid,1]]
+            istart=i*lda
+            calc_s(istart,istart+lda/2,    xA1,xA2,xB1,xB2,flip=False)
+            calc_s(istart+lda/2,istart+lda,xB1,xB2,xA1,xA2,flip=True)
+
             for c in xrange(lda):
                 chi_X_table[i*lda+c,:3] = XA1 * chi_s_table[i*lda+c,0] + XA2*(1.0-chi_s_table[i*lda+c,0])
                 chi_X_table[i*lda+c,3:] = XB1 * chi_s_table[i*lda+c,1] + XB2*(1.0-chi_s_table[i*lda+c,1])    
                 chi_dist_table[i*lda+c] = np.linalg.norm(chi_X_table[i*lda+c,:3]-chi_X_table[i*lda+c,3:])
+                
+        for i,(mid,sid) in enumerate(pair_table):
+            calc_chi(i,mid,sid,0,
+                     vertsA,cellsA,ref_vertsA,ref_cellsA,
+                      vertsB,cellsB,ref_vertsB,ref_cellsB)
+            # calc_chi(i,sid,mid,lda/2,
+            #             vertsB,cellsB,ref_vertsB,ref_cellsB,
+            #             vertsA,cellsA,ref_vertsA,ref_cellsA)
 
         # embed()
         self.pair_table = pair_table
