@@ -25,10 +25,10 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
     mu_alpha = Constant(-0.03)
     rho = Constant(1.0)
     thermalcond = Constant(1.0)
-    Height = 2.5
+    Height = 1.0
     Width = 1.0
 
-    em_B = Constant((0.0,1.0,0.0))
+    em_B = Constant((0.0,0.0,0.0)) #Constant((0.0,1.0,0.0))
     # em_I = Constant(1.0/Height/Width)
     em_sig = Constant(10.0)
 
@@ -101,7 +101,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
         ey = (Ez+r.dx(orientation)) /sqrt( inner(Ez+r.dx(orientation),Ez+r.dx(orientation)) )
 
         FExtCont = -em_I*inner(dv,cross(ey,em_B))
-        FLocCont = weight*derivative(-PsiCont,wx,dw)*dx+weight*FExtCont*dx+weight*inner(dv,-1.0e-2*v)*dx + ThermalFLoc + VoltageFLoc
+        FLocCont = weight*derivative(-PsiCont,wx,dw)*dx+weight*FExtCont*dx+weight*inner(dv,-1.0e-1*v)*dx + ThermalFLoc + VoltageFLoc
         
         # Add up the forms
         Psi = PsiCont if Psi is None else Psi + PsiCont
@@ -115,9 +115,9 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
     # Contact forms
     xr = X0 + r
     dist = sqrt(dot(jump(xr),jump(xr)))
-    overlap = (Constant(0.05)-dist)
+    overlap = (Constant(0.1)-dist)
     ContactForm = -dot(jump(dvr),
-                      conditional(ge(overlap,0.0),-200.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                      conditional(ge(overlap,0.0),-2000000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Finalize and make derivatives
     Fform =  FExt + ContactForm #-derivative(Psi,wx,dw)*dx - Mass*dx

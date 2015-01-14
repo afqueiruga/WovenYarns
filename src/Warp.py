@@ -24,7 +24,7 @@ class Warp():
         self.Tmdof = MultiMeshDofMap()
         self.Tmmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
-            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
+            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 25)
             E = np.array(pts[1])- np.array(pts[0])
             if E[1]==0.0 and E[2]==0.0:
                 orientation=0
@@ -159,6 +159,7 @@ class Warp():
         self.MT = M
         self.AT = AX
         self.RT = R
+        
     def assemble_mass(self):
         from BroadcastAssembler import BroadcastAssembler
         gN = self.mdof.global_dimension()

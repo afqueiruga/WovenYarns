@@ -41,7 +41,7 @@ class Fibril():
           MultiphysicsForm(self.W,self.V,self.S,self.wx,self.wv,self.X0, self.orientation)
 
         self.Height = 1.0
-        self.Width = 0.5
+        self.Width = 1.0
         
     def build_form(self,wx=None,wv=None):
         if not wx and not wv:
