@@ -94,7 +94,7 @@ def solve(order,NT):
     # warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
     dirk = DIRK_Monolithic(order, h, warp, warp.assemble_system, warp.update, apply_BCs)
     warp.output_states("../post/fibril2_time_{0}_"+str(0)+".pvd",1)
-
+    warp.output_surfaces("../post/fibril2mesh_time_{0}_"+str(0)+".pvd",1)
     for t in xrange(NT):
         dirk.march()
         # for g,p in enumerate(probes):

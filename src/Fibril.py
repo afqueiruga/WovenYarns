@@ -115,7 +115,7 @@ class Fibril():
         self.X0.rename("X0","field")
         vfile.write(i,[q,h1,h2,g1,g2, vq,vh1,vh2, T, Vol,self.X0,self.T],[])
         # vfile = VTKAppender(fname,"ascii")
-    def write_surface(self,fname,i):
+    def write_surface(self,fname,i,Lnum=200,Lmax=100.0):
         """
         Pop out one file on the currently active file.
         """
@@ -128,10 +128,47 @@ class Fibril():
         g1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
         g1.rename("g1","field")
         g2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
-        g2.rename("2","field")
+        g2.rename("g2","field")
 
-        
-        pass
+        hullmesh = Mesh()
+        edit = MeshEditor()
+        edit.open(hullmesh,2,3)
+        edit.init_vertices(Lnum*4)
+
+        qN = q.compute_vertex_values()
+        g1N = g1.compute_vertex_values()
+        g2N = g2.compute_vertex_values()
+        qN = qN.reshape([3,qN.shape[0]/3])
+        g1N = g1N.reshape([3,g1N.shape[0]/3])
+        g2N = g2N.reshape([3,g2N.shape[0]/3])
+        coords = q.function_space().mesh().coordinates()
+        for ix in xrange(qN.shape[1]):
+            xi3 = (1.0*ix)/(1.0*Lnum)*Lmax
+            cent = qN[:,ix]+coords[ix]
+            g1c = g1N[:,ix]
+            g2c = g2N[:,ix]
+
+            edit.add_vertex(4*ix+0,np.array(cent+g1c+g2c,dtype=np.float_))
+            edit.add_vertex(4*ix+1,np.array(cent-g1c+g2c,dtype=np.float_))
+            edit.add_vertex(4*ix+2,np.array(cent-g1c-g2c,dtype=np.float_))
+            edit.add_vertex(4*ix+3,np.array(cent+g1c-g2c,dtype=np.float_))
+        edit.init_cells( (Lnum-1)*8)
+        for ix in xrange(1,qN.shape[1]):
+            edit.add_cell(8*(ix-1)+0, 4*ix+0   , 4*(ix-1)+3, 4*(ix-1)+0)
+            edit.add_cell(8*(ix-1)+1, 4*ix+0   , 4*ix    +3, 4*(ix-1)+3)
+            
+            edit.add_cell(8*(ix-1)+2, 4*ix+1   , 4*ix    +0, 4*(ix-1)+0)
+            edit.add_cell(8*(ix-1)+3, 4*ix+1   , 4*(ix-1)+0, 4*(ix-1)+1)
+            
+            edit.add_cell(8*(ix-1)+4, 4*ix+1   , 4*(ix-1)+1, 4*(ix  )+2)
+            edit.add_cell(8*(ix-1)+5, 4*ix+2   , 4*(ix-1)+1, 4*(ix-1)+2)
+            
+            edit.add_cell(8*(ix-1)+6, 4*ix+3   , 4*ix    +2, 4*(ix-1)+2)
+            edit.add_cell(8*(ix-1)+7, 4*ix+3   , 4*(ix-1)+2, 4*(ix-1)+3)
+        edit.close()
+        vf = File(fname,"ascii")
+        vf << hullmesh
+        # vf.close()
     def close_file(self):
         "Self explanatory."
         # self.vfile.close()
