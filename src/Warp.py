@@ -24,7 +24,7 @@ class Warp():
         self.Tmdof = MultiMeshDofMap()
         self.Tmmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
-            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 25)
+            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
             E = np.array(pts[1])- np.array(pts[0])
             if E[1]==0.0 and E[2]==0.0:
                 orientation=0
@@ -93,7 +93,7 @@ class Warp():
         self.contacts = []
         for i,p in enumerate(pairs):
             cp = ContactPair(self.fibrils[p[0]].mesh,self.fibrils[p[0]].mesh,
-                             self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,20,self.contact_cutoff)
+                             self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,10,self.contact_cutoff)
             cp.make_table()
             self.contacts.append(cp)
 

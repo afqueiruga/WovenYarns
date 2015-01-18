@@ -115,9 +115,9 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
     # Contact forms
     xr = X0 + r
     dist = sqrt(dot(jump(xr),jump(xr)))
-    overlap = (Constant(0.1)-dist)
+    overlap = (Constant(0.15)-dist)
     ContactForm = -dot(jump(dvr),
-                      conditional(ge(overlap,0.0),-2000000.0*overlap+10.0,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                      conditional(ge(overlap,0.0),-20000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Finalize and make derivatives
     Fform =  FExt + ContactForm #-derivative(Psi,wx,dw)*dx - Mass*dx
