@@ -106,16 +106,32 @@ class Fibril():
         # q1.interpolate(Height/2.0*Constant((0.0,1.0,0.0))+h1)
         # q2 = Function(V)
         # q2.interpolate(Width/2.0*Constant((0.0,0.0,1.0))+h2)
-        q1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
-        q1.rename("q1","field")
-        q2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
-        q2.rename("q2","field")
+        g1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
+        g1.rename("g1","field")
+        g2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
+        g2.rename("g2","field")
 
         self.T.rename("Tself","field")
         self.X0.rename("X0","field")
-        vfile.write(i,[q,h1,h2,q1,q2, vq,vh1,vh2, T, Vol,self.X0,self.T],[])
+        vfile.write(i,[q,h1,h2,g1,g2, vq,vh1,vh2, T, Vol,self.X0,self.T],[])
         # vfile = VTKAppender(fname,"ascii")
+    def write_surface(self,fname,i):
+        """
+        Pop out one file on the currently active file.
+        """
+        from multiwriter.multiwriter import VTKAppender
+        vfile = VTKAppender(fname,"ascii")
 
+        q,h1,h2, Tnull, Vnull    = self.wx.split()
+        vq,vh1,vh2,T,Vol = self.wv.split()
+
+        g1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
+        g1.rename("g1","field")
+        g2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
+        g2.rename("2","field")
+
+        
+        pass
     def close_file(self):
         "Self explanatory."
         # self.vfile.close()
