@@ -12,7 +12,7 @@ This is a base class for the director-based Fibril
 """
 from IPython import embed
 class Fibril():
-    def __init__(self,mesh,orientation=0,wx=None,wv=None):
+    def __init__(self,mesh,orientation=0, radius=0.075, wx=None,wv=None):
         """
         Create a new Fibril on a given mesh. It better be a line mesh.
         Dirrichlet BCs by default.
@@ -25,7 +25,8 @@ class Fibril():
         if wx and wv:
             build_form(wx,wv)
         self.orientation=orientation
-
+        self.radius=radius
+        
     def build_multi_form(self,wx=None,wv=None):
         if not wx and not wv:
             self.wx = Function(self.W)
@@ -37,8 +38,8 @@ class Fibril():
         self.X0 = Function(self.V)
         self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
         
-        self.Fform,self.Mform,self.AXform,self.AVform = \
-          MultiphysicsForm(self.W,self.V,self.S,self.wx,self.wv,self.X0, self.orientation)
+        self.Fform,self.Mform,self.AXform,self.AVform, self.Ez,self.E1,self.E2 = \
+          MultiphysicsForm(self.W,self.V,self.S,self.wx,self.wv,self.X0, self.orientation,self.radius)
 
         self.Height = 1.0
         self.Width = 1.0
@@ -115,7 +116,7 @@ class Fibril():
         self.X0.rename("X0","field")
         vfile.write(i,[q,h1,h2,g1,g2, vq,vh1,vh2, T, Vol,self.X0,self.T],[])
         # vfile = VTKAppender(fname,"ascii")
-    def write_surface(self,fname,i,Lnum=200,Lmax=100.0):
+    def write_surface(self,fname,i,NT=16,Lnum=200,Lmax=100.0):
         """
         Pop out one file on the currently active file.
         """
@@ -125,9 +126,9 @@ class Fibril():
         q,h1,h2, Tnull, Vnull    = self.wx.split()
         vq,vh1,vh2,T,Vol = self.wv.split()
 
-        g1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
+        g1 = project(self.radius*self.E1+h1,self.V)
         g1.rename("g1","field")
-        g2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
+        g2 = project(self.radius*self.E2+h2,self.V)
         g2.rename("g2","field")
 
         hullmesh = Mesh()
@@ -147,24 +148,32 @@ class Fibril():
             cent = qN[:,ix]+coords[ix]
             g1c = g1N[:,ix]
             g2c = g2N[:,ix]
-
-            edit.add_vertex(4*ix+0,np.array(cent+g1c+g2c,dtype=np.float_))
-            edit.add_vertex(4*ix+1,np.array(cent-g1c+g2c,dtype=np.float_))
-            edit.add_vertex(4*ix+2,np.array(cent-g1c-g2c,dtype=np.float_))
-            edit.add_vertex(4*ix+3,np.array(cent+g1c-g2c,dtype=np.float_))
-        edit.init_cells( (Lnum-1)*8)
+            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)):
+                edit.add_vertex(NT*ix+jt,
+                                np.array(cent+np.cos(theta)*g1c+np.sin(theta)*g2c,dtype=np.float_))
+            # edit.add_vertex(4*ix+0,np.array(cent+g1c+g2c,dtype=np.float_))
+            # edit.add_vertex(4*ix+1,np.array(cent-g1c+g2c,dtype=np.float_))
+            # edit.add_vertex(4*ix+2,np.array(cent-g1c-g2c,dtype=np.float_))
+            # edit.add_vertex(4*ix+3,np.array(cent+g1c-g2c,dtype=np.float_))
+        edit.init_cells( (Lnum-1)*2*NT)
         for ix in xrange(1,qN.shape[1]):
-            edit.add_cell(8*(ix-1)+0, 4*ix+0   , 4*(ix-1)+3, 4*(ix-1)+0)
-            edit.add_cell(8*(ix-1)+1, 4*ix+0   , 4*ix    +3, 4*(ix-1)+3)
+            for jt in xrange(NT-1):
+                edit.add_cell(2*NT*(ix-1)+2*jt, NT*ix+jt+1   , NT*(ix-1)+jt, NT*(ix-1)+jt+1)
+                edit.add_cell(2*NT*(ix-1)+2*jt+1, NT*ix+jt+1   , NT*ix    +jt, NT*(ix-1)+jt)
+            edit.add_cell(2*NT*(ix-1)+2*NT, NT*ix+0   , NT*(ix-1)+NT, NT*(ix-1)+0)
+            edit.add_cell(2*NT*(ix-1)+2*NT+1, NT*ix+0   , NT*ix    +NT, NT*(ix-1)+NT)
             
-            edit.add_cell(8*(ix-1)+2, 4*ix+1   , 4*ix    +0, 4*(ix-1)+0)
-            edit.add_cell(8*(ix-1)+3, 4*ix+1   , 4*(ix-1)+0, 4*(ix-1)+1)
+            # edit.add_cell(8*(ix-1)+0, 4*ix+0   , 4*(ix-1)+3, 4*(ix-1)+0)
+            # edit.add_cell(8*(ix-1)+1, 4*ix+0   , 4*ix    +3, 4*(ix-1)+3)
             
-            edit.add_cell(8*(ix-1)+4, 4*ix+1   , 4*(ix-1)+1, 4*(ix  )+2)
-            edit.add_cell(8*(ix-1)+5, 4*ix+2   , 4*(ix-1)+1, 4*(ix-1)+2)
+            # edit.add_cell(8*(ix-1)+2, 4*ix+1   , 4*ix    +0, 4*(ix-1)+0)
+            # edit.add_cell(8*(ix-1)+3, 4*ix+1   , 4*(ix-1)+0, 4*(ix-1)+1)
             
-            edit.add_cell(8*(ix-1)+6, 4*ix+3   , 4*ix    +2, 4*(ix-1)+2)
-            edit.add_cell(8*(ix-1)+7, 4*ix+3   , 4*(ix-1)+2, 4*(ix-1)+3)
+            # edit.add_cell(8*(ix-1)+4, 4*ix+1   , 4*(ix-1)+1, 4*(ix  )+2)
+            # edit.add_cell(8*(ix-1)+5, 4*ix+2   , 4*(ix-1)+1, 4*(ix-1)+2)
+            
+            # edit.add_cell(8*(ix-1)+6, 4*ix+3   , 4*ix    +2, 4*(ix-1)+2)
+            # edit.add_cell(8*(ix-1)+7, 4*ix+3   , 4*(ix-1)+2, 4*(ix-1)+3)
         edit.close()
         vf = File(fname,"ascii")
         vf << hullmesh
