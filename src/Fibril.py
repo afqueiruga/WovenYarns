@@ -151,10 +151,7 @@ class Fibril():
             for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)):
                 edit.add_vertex(NT*ix+jt,
                                 np.array(cent+np.cos(theta)*g1c+np.sin(theta)*g2c,dtype=np.float_))
-            # edit.add_vertex(4*ix+0,np.array(cent+g1c+g2c,dtype=np.float_))
-            # edit.add_vertex(4*ix+1,np.array(cent-g1c+g2c,dtype=np.float_))
-            # edit.add_vertex(4*ix+2,np.array(cent-g1c-g2c,dtype=np.float_))
-            # edit.add_vertex(4*ix+3,np.array(cent+g1c-g2c,dtype=np.float_))
+
         edit.init_cells( (Lnum-1)*2*NT)
         for ix in xrange(1,qN.shape[1]):
             for jt in xrange(NT-1):
@@ -162,19 +159,9 @@ class Fibril():
                 edit.add_cell(2*NT*(ix-1)+2*jt+1, NT*ix+jt+1   , NT*ix    +jt, NT*(ix-1)+jt)
             edit.add_cell(2*NT*(ix-1)+2*NT, NT*ix+0   , NT*(ix-1)+NT, NT*(ix-1)+0)
             edit.add_cell(2*NT*(ix-1)+2*NT+1, NT*ix+0   , NT*ix    +NT, NT*(ix-1)+NT)
-            
-            # edit.add_cell(8*(ix-1)+0, 4*ix+0   , 4*(ix-1)+3, 4*(ix-1)+0)
-            # edit.add_cell(8*(ix-1)+1, 4*ix+0   , 4*ix    +3, 4*(ix-1)+3)
-            
-            # edit.add_cell(8*(ix-1)+2, 4*ix+1   , 4*ix    +0, 4*(ix-1)+0)
-            # edit.add_cell(8*(ix-1)+3, 4*ix+1   , 4*(ix-1)+0, 4*(ix-1)+1)
-            
-            # edit.add_cell(8*(ix-1)+4, 4*ix+1   , 4*(ix-1)+1, 4*(ix  )+2)
-            # edit.add_cell(8*(ix-1)+5, 4*ix+2   , 4*(ix-1)+1, 4*(ix-1)+2)
-            
-            # edit.add_cell(8*(ix-1)+6, 4*ix+3   , 4*ix    +2, 4*(ix-1)+2)
-            # edit.add_cell(8*(ix-1)+7, 4*ix+3   , 4*(ix-1)+2, 4*(ix-1)+3)
+
         edit.close()
+        
         vf = File(fname,"ascii")
         vf << hullmesh
         # vf.close()

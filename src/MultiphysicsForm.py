@@ -20,7 +20,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0,radius=1.0):
     #
     # Material Properties
     #
-    E, nu = 50.0, 0.0
+    E, nu = 1.0, 0.0
     mu, lmbda = Constant(E/(2*(1 + nu))), Constant(E*nu/((1 + nu)*(1 - 2*nu)))
     mu_alpha = Constant(-0.03)
     rho = Constant(1.0)
@@ -115,7 +115,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0,radius=1.0):
     dist = sqrt(dot(jump(xr),jump(xr)))
     overlap = (2.0*Constant(radius)-dist)
     ContactForm = -dot(jump(dvr),
-                      conditional(ge(overlap,0.0),-20000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                      conditional(ge(overlap,0.0),-4000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Finalize and make derivatives
     Fform =  FExt + ContactForm #-derivative(Psi,wx,dw)*dx - Mass*dx
