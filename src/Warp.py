@@ -12,17 +12,21 @@ class Warp():
 
     Handles assembly, ContactPair management, io, etc.
     """
-    def __init__(self, endpts, cutoff=0.3):
+    def __init__(self, endpts, monolithic=True,cutoff=0.3):
         """
         Initialize a warp from a list of end points.
         """
         import ProximityTree
         self.fibrils = []
         self.CMM = ContactMultiMesh()
+
         self.mdof = MultiMeshDofMap()
         self.mmfs = MultiMeshFunctionSpace()
-        self.Tmdof = MultiMeshDofMap()
-        self.Tmmfs = MultiMeshFunctionSpace()
+        if not monolithic:
+            self.Tmdof = MultiMeshDofMap()
+            self.Tmmfs = MultiMeshFunctionSpace()
+            self.Vmdof = MultiMeshDofMap()
+            self.Vmmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
             me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
             E = np.array(pts[1])- np.array(pts[0])
@@ -38,36 +42,40 @@ class Warp():
             self.CMM.add( fib.mesh )
             self.mmfs.add( fib.W )
             self.mdof.add( fib.W.dofmap() )
-            self.Tmmfs.add( fib.S )
-            self.Tmdof.add( fib.S.dofmap() )
-
+            if not monolithic:
+                self.Tmmfs.add( fib.S )
+                self.Tmdof.add( fib.S.dofmap() )
+                self.Vmmfs.add( fib.S )
+                self.Vmdof.add( fib.S.dofmap() )
+                
         self.CMM.build()
         self.mmfs.build(self.CMM, np.array([],dtype=np.intc) )
         # self.mdof = self.mmfs.dofmap()
         self.mdof.build( self.mmfs, np.array([],dtype=np.intc) )
-        self.Tmmfs.build(self.CMM, np.array([],dtype=np.intc) )
-        self.Tmdof.build( self.Tmmfs, np.array([],dtype=np.intc) )
+        if not monolithic:
+            self.Tmmfs.build(self.CMM, np.array([],dtype=np.intc) )
+            self.Tmdof.build( self.Tmmfs, np.array([],dtype=np.intc) )
+            self.Vmmfs.build(self.CMM, np.array([],dtype=np.intc) )
+            self.Vmdof.build( self.Vmmfs, np.array([],dtype=np.intc) )
 
         self.wx = MultiMeshFunction(self.mmfs)
         self.wv = MultiMeshFunction(self.mmfs)
-
+        if not monolithic:
+            self.T = MultiMeshFunction(self.Tmmfs)
+            self.V = MultiMeshFunction(self.Vmmfs)
+            
         for i,fib in enumerate( self.fibrils ):
-            fib.build_multi_form()
-            fib.build_thermal_form()
-             #self.wx.part(i),self.wv.part(i))
-            # Initialize the position (zero for now, but I want it to be x)
-            # temp = Function(self.fibrils[i].V)
-            # temp.interpolate(Expression(("0.0","0.0","0.0")))
-            # assign(self.fibrils[i].wx.sub(0), temp)
-            # Initialize the velocity (zero for now)
-            # temp.interpolate(Expression(("0.0","0.0","0.0")))
-            # assign(self.fibrils[i].wv.sub(0), temp)
-            # self.mdof.add(self.fibrils[i].W.dofmap())
-            # self.mmfs.add(self.fibrils[i].W)
-        # self.mdof.build(self.mmfs, np.array([],dtype=np.intc) )
-        
+            if monolithic:
+                fib.build_multi_form()
+            else:
+                fib.build_iterative_form()
+            # fib.build_thermal_form()
+            
         self.contacts = []
         self.contact_cutoff = cutoff
+
+
+    
     def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
             fib.write_file(fname.format(j),i)
