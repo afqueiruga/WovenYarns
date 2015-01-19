@@ -13,8 +13,8 @@ Main entry point of the simulation.
 
 """
 
-from Warp import Warp
-from DIRK import DIRK_Monolithic
+from src import Warp
+from src.DIRK import DIRK_Monolithic
 
 pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
     [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
@@ -91,10 +91,10 @@ def solve(order,NT):
         warp.wv.vector()[ warp.mdof.part(i).dofs() ] = fib.wv.vector()[:]
         time_series[0] = 0.0
     warp.create_contacts()
-    # warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
+    # warp.output_contacts("post/contact_{2}_{0}_{1}.pvd")
     dirk = DIRK_Monolithic(order, h, warp, warp.assemble_system, warp.update, apply_BCs)
-    warp.output_states("../post/fibril2_time_{0}_"+str(0)+".pvd",1)
-    warp.output_surfaces("../post/fibril2mesh_time_{0}_"+str(0)+".pvd",1)
+    warp.output_states("post/fibril2_time_{0}_"+str(0)+".pvd",1)
+    warp.output_surfaces("post/fibril2mesh_time_{0}_"+str(0)+".pvd",1)
     for t in xrange(NT):
         dirk.march()
         # for g,p in enumerate(probes):
@@ -104,8 +104,8 @@ def solve(order,NT):
         #         warp.fibrils[2].wv.eval(weval,p[0])
         #     time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
-        warp.output_states("../post/fibril2_time_{0}_"+str(t+1)+".pvd",1)
-        warp.output_surfaces("../post/fibril2mesh_time_{0}_"+str(t+1)+".pvd",1)
+        warp.output_states("post/fibril2_time_{0}_"+str(t+1)+".pvd",1)
+        warp.output_surfaces("post/fibril2mesh_time_{0}_"+str(t+1)+".pvd",1)
 
     return (times,time_series,h,order)
 

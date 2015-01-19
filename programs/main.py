@@ -13,7 +13,7 @@ Main entry point of the simulation.
 
 """
 
-from Warp import Warp
+from src import Warp
 
 endpts = [ [ [-10.0, 0.0,-0.149],  [10.0, 0.0, -0.149] ],
            # [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ] ,
@@ -48,8 +48,8 @@ for t in xrange(1,Nsteps):
         print " Newton iteration ",it," infNorm = ",eps, "  ",(it!=0)
         it+=1
 
-    warp.output_states("../post/fibril_{0}_"+str(t)+".pvd",1)
-    warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
-    warp.output_surfaces("../post/fibrilmesh_{0}_"+str(t+1)+".pvd",1)
+    warp.output_states("post/fibril_{0}_"+str(t)+".pvd",1)
+    warp.output_contacts("post/contact_{2}_{0}_{1}.pvd")
+    warp.output_surfaces("post/fibrilmesh_{0}_"+str(t+1)+".pvd",1)
 
 embed()
