@@ -1,9 +1,7 @@
 from dolfin import *
 import numpy as np
 
-from BeamForm import BeamForm
-from ThermalForm import ThermalForm
-from MultiphysicsForm import MultiphysicsForm
+from Forms import BeamForm, ThermalForm, MultiphysicsForm, IterativeForm
 
 """
 
