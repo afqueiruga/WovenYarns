@@ -120,7 +120,7 @@ def IterativeForm(W,V,S,wx,wv,T,Vol,X0, orientation=0,radius=1.0):
         Psi = PsiCont if Psi is None else Psi + PsiCont
         Mass = MassCont if Mass is None else Mass + MassCont
         FExt = FLocCont if FExt is None else FExt + FLocCont
-        FT = ThermalFloc if FT is None else FT + ThermalFLoc
+        FT = ThermalFLoc if FT is None else FT + ThermalFLoc
         FV = VoltageFLoc if FV is None else FV + VoltageFLoc
         
         # Velocity = VelocityCont if Velocity is None else Velocity + VelocityCont
@@ -142,12 +142,12 @@ def IterativeForm(W,V,S,wx,wv,T,Vol,X0, orientation=0,radius=1.0):
     # Thermal forms 
     # Thermal mass doesn't need to be integrated
     MTform = inner(dT,rho*dTdt)*dx
-    AT = derivative(FTform,T,DelT)
+    AT = derivative(FT,T,DelT)
 
     # Voltage Forms
-    AV = derivative(FVform,V,DelV)
+    AVolForm = derivative(FV,V,DelV)
     
     return Form(Fform),Form(Mform),Form(AXform),Form(AVform), \
-      Form(FTForm),Form(MTform),Form(ATform), \
-      Form(FVForm),Form(AVform), \
+      Form(FT),Form(MTform),Form(ATform), \
+      Form(FV),Form(AVolform), \
       Ez,E1,E2
