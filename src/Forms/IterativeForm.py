@@ -131,7 +131,7 @@ def IterativeForm(W,V,S,wx,wv,T,Vol,X0, orientation=0,radius=1.0):
     dist = sqrt(dot(jump(xr),jump(xr)))
     overlap = (2.0*Constant(radius)-dist)
     ContactForm = -dot(jump(dvr),
-                      conditional(ge(overlap,0.0),-4000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                      conditional(ge(overlap,0.0), -40.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Mechanical forms and derivatives
     Fform =  FExt + ContactForm #-derivative(Psi,wx,dw)*dx - Mass*dx

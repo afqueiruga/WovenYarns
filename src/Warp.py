@@ -377,7 +377,7 @@ class Warp():
 
         left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -10.0)
         bcleft = MultiMeshDirichletBC(self.mmfs, zero, left)
-        right = CompiledSubDomain("near(x[0], side) && near(x[2], -1.0) && on_boundary", side = 10.0)
+        right = CompiledSubDomain("near(x[0], side) && on_boundary", side = 10.0)
         bcright = MultiMeshDirichletBC(self.mmfs, extend, right)
 
         bcleft.apply(self.AX,self.R)
