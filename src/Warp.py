@@ -39,7 +39,7 @@ class Warp():
             else:
                 print "Error: Fibrils must be axis aligned! But I'm not going to stop."
                 orientation=0
-            fib = Fibril(me,orientation)
+            fib = Fibril(me,orientation,monolithic)
             self.fibrils.append( fib )
             self.CMM.add( fib.mesh )
             self.mmfs.add( fib.W )

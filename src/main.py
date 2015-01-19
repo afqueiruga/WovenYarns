@@ -15,11 +15,11 @@ Main entry point of the simulation.
 
 from Warp import Warp
 
-endpts = [ [ [-10.0, 0.0,-1.0],  [10.0, 0.0, -1.0] ],
+endpts = [ [ [-10.0, 0.0,-0.2],  [10.0, 0.0, -0.2] ],
            # [ [-1.0, 0.0,0.0],  [1.0, 0.0, 0.0] ] ,
            [ [-10.0, 0.0,0.0],  [10.0, 0.0, 0.0] ] ]
 
-warp = Warp(endpts)
+warp = Warp(endpts,monolithic=False,cutoff=0.5)
 
 Delw = MultiMeshFunction(warp.mmfs)
 

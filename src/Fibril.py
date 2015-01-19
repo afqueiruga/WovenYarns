@@ -10,7 +10,7 @@ This is a base class for the director-based Fibril
 """
 from IPython import embed
 class Fibril():
-    def __init__(self,mesh,orientation=0, radius=0.075, wx=None,wv=None):
+    def __init__(self,mesh,orientation=0, monolithic=True, radius=0.075, wx=None,wv=None):
         """
         Create a new Fibril on a given mesh. It better be a line mesh.
         Dirrichlet BCs by default.
@@ -19,7 +19,10 @@ class Fibril():
         self.current_mesh = Mesh(mesh)
         self.V = VectorFunctionSpace(mesh,"CG",1)
         self.S = FunctionSpace(mesh,"CG",1)
-        self.W = MixedFunctionSpace([self.V,self.V,self.V,self.S,self.S])
+        if monolithic:
+            self.W = MixedFunctionSpace([self.V,self.V,self.V,self.S,self.S])
+        else:
+            self.W = MixedFunctionSpace([self.V,self.V,self.V])
         if wx and wv:
             build_form(wx,wv)
         self.orientation=orientation
@@ -50,11 +53,11 @@ class Fibril():
         self.X0 = Function(self.V)
         self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
         
-        self.Fform,self.Mform,self.AXform,self.AVform,
-        self.FTform,self.MTform,self.ATform,
-        self.FVform,self.AVform,
+        self.Fform,self.Mform,self.AXform,self.AVform, \
+        self.FTform,self.MTform,self.ATform, \
+        self.FVform,self.AVform, \
         self.Ez,self.E1,self.E2 = \
-          MultiphysicsForm(self.W,self.V,self.S,
+          IterativeForm(self.W,self.V,self.S,
                            self.wx,self.wv,self.T,self.Vol,
                            self.X0, self.orientation,self.radius)
         
