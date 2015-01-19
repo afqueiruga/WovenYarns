@@ -142,10 +142,10 @@ def IterativeForm(W,V,S,wx,wv,T,Vol,X0, orientation=0,radius=1.0):
     # Thermal forms 
     # Thermal mass doesn't need to be integrated
     MTform = inner(dT,rho*dTdt)*dx
-    AT = derivative(FT,T,DelT)
+    ATform = derivative(FT,T,DelT)
 
     # Voltage Forms
-    AVolForm = derivative(FV,V,DelV)
+    AVolform = derivative(FV,Vol,DelV)
     
     return Form(Fform),Form(Mform),Form(AXform),Form(AVform), \
       Form(FT),Form(MTform),Form(ATform), \
