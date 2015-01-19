@@ -6,7 +6,7 @@ The form for the beam element with thermal and EM problems in it.
 
 from dolfin import *
 
-def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
+def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0,radius=1.0):
     vr,vg1,vg2,T,Vol = split(wv)
     r,g1,g2,Tnull,Vnull = split(wx)
 
@@ -20,13 +20,11 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
     #
     # Material Properties
     #
-    E, nu = 50.0, 0.0
+    E, nu = 1.0, 0.0
     mu, lmbda = Constant(E/(2*(1 + nu))), Constant(E*nu/((1 + nu)*(1 - 2*nu)))
     mu_alpha = Constant(-0.03)
     rho = Constant(1.0)
     thermalcond = Constant(1.0)
-    Height = 1.0
-    Width = 1.0
 
     em_B = Constant((0.0,0.0,0.0)) #Constant((0.0,1.0,0.0))
     # em_I = Constant(1.0/Height/Width)
@@ -65,13 +63,13 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
     Mass = None
     ThermalMass = None
 
-    J0 = Constant(Width*Height/4.0 )
+    J0 = Constant(radius*radius/4.0 )
     for z1,z2,weight in GPS2D:
-        u = r + Height/2.0*Constant(z1)*g1 + Width/2.0*Constant(z2)*g2
-        v = vr + Height/2.0*Constant(z1)*vg1 + Width/2.0*Constant(z2)*vg2
+        u = r + radius*Constant(z1)*g1 + radius*Constant(z2)*g2
+        v = vr + radius*Constant(z1)*vg1 + radius*Constant(z2)*vg2
         
         # dxdt = drdt + Height/2.0*Constant(z1)*dg1dt + Width/2.0*Constant(z1)*dg2dt
-        dvdt = dvrdt + Height/2.0*Constant(z1)*dvg1dt + Width/2.0*Constant(z2)*dvg2dt
+        dvdt = dvrdt + radius*Constant(z1)*dvg1dt + radius*Constant(z2)*dvg2dt
         du = derivative(u,wx,dw)
         dv = derivative(v,wv,dw)
         dT = derivative(T,wv,dw)
@@ -115,13 +113,13 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0):
     # Contact forms
     xr = X0 + r
     dist = sqrt(dot(jump(xr),jump(xr)))
-    overlap = (Constant(0.15)-dist)
+    overlap = (2.0*Constant(radius)-dist)
     ContactForm = -dot(jump(dvr),
-                      conditional(ge(overlap,0.0),-20000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                      conditional(ge(overlap,0.0),-4000.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
     # Finalize and make derivatives
     Fform =  FExt + ContactForm #-derivative(Psi,wx,dw)*dx - Mass*dx
     Mform = Mass*dx + ThermalMass
     AXform = derivative(Fform,wx,Delw)
     AVform = derivative(Fform,wv,Delw)
-    return Form(Fform),Form(Mform),Form(AXform),Form(AVform)
+    return Form(Fform),Form(Mform),Form(AXform),Form(AVform), Ez,E1,E2

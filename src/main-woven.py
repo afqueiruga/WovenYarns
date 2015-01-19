@@ -22,7 +22,7 @@ pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
 
 endpts = []
 
-scale = 0.1499
+scale = 0.15
 for l in pattern:
     endpts.append([ [ -2.5+scale*l[0], -5.0, scale*l[1] ], [ -2.5+scale*l[0], 5.0, scale*l[1] ] ])
 for l in pattern:
@@ -74,16 +74,16 @@ def solve(order,NT):
     times = np.zeros(NT+1)
     for i,fib in enumerate(warp.fibrils):
         if i<7:
-            fib.wx.interpolate(Expression(("0.0","0.0","(1.1*scale)*sin(x[1]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
+            fib.wx.interpolate(Expression(("0.0","0.0","(1.5*scale)*sin(x[1]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
                             "0.0", "0.0"),PI=np.pi,scale=-scale))
         elif i<14:
-            fib.wx.interpolate(Expression(("0.0","0.0","(1.1*scale)*sin(x[1]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
+            fib.wx.interpolate(Expression(("0.0","0.0","(1.5*scale)*sin(x[1]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
                             "0.0", "0.0"),PI=np.pi,scale=scale))
         elif i<21:
-            fib.wx.interpolate(Expression(("0.0","0.0","-(1.1*scale)*sin(x[0]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
+            fib.wx.interpolate(Expression(("0.0","0.0","-(1.5*scale)*sin(x[0]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
                             "0.0", "0.0"),PI=np.pi,scale=scale))
         else:
-            fib.wx.interpolate(Expression(("0.0","0.0","(1.1*scale)*sin(x[0]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
+            fib.wx.interpolate(Expression(("0.0","0.0","(1.5*scale)*sin(x[0]*PI/5.0)", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
                             "0.0", "0.0"),PI=np.pi,scale=scale))
         fib.wv.interpolate(Expression(("0.0","0.0","0.0", "0.0"," 0.0","0.0", "0.0","0.0","0.0",
                             "0.0", "0.0")))# "x[0]/100.0")))
@@ -94,7 +94,7 @@ def solve(order,NT):
     # warp.output_contacts("../post/contact_{2}_{0}_{1}.pvd")
     dirk = DIRK_Monolithic(order, h, warp, warp.assemble_system, warp.update, apply_BCs)
     warp.output_states("../post/fibril2_time_{0}_"+str(0)+".pvd",1)
-
+    warp.output_surfaces("../post/fibril2mesh_time_{0}_"+str(0)+".pvd",1)
     for t in xrange(NT):
         dirk.march()
         # for g,p in enumerate(probes):
@@ -105,8 +105,10 @@ def solve(order,NT):
         #     time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
         warp.output_states("../post/fibril2_time_{0}_"+str(t+1)+".pvd",1)
+        warp.output_surfaces("../post/fibril2mesh_time_{0}_"+str(t+1)+".pvd",1)
+
     return (times,time_series,h,order)
 
-solve(1,400)
+solve(1,100)
 
 embed()

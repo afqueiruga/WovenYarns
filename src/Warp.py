@@ -71,7 +71,9 @@ class Warp():
     def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
             fib.write_file(fname.format(j),i)
-
+    def output_surfaces(self,fname,i):
+        for j,fib in enumerate(self.fibrils):
+            fib.write_surface(fname.format(j),i)
     def output_contacts(self,fname):
         for j,c in enumerate(self.contacts):
             c.output_file(fname.format(self.fibril_pairs[j][0],self.fibril_pairs[j][1],"pairs"),
