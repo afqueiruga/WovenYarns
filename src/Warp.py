@@ -32,11 +32,13 @@ class Warp():
             E = np.array(pts[1])- np.array(pts[0])
             if E[1]==0.0 and E[2]==0.0:
                 orientation=0
-            if E[0]==0.0 and E[2]==0.0:
+            elif E[0]==0.0 and E[2]==0.0:
                 orientation=1
-            if E[0]==0.0 and E[1]==0.0:
+            elif E[0]==0.0 and E[1]==0.0:
                 orientation=2
-            print orientation
+            else:
+                print "Error: Fibrils must be axis aligned! But I'm not going to stop."
+                orientation=0
             fib = Fibril(me,orientation)
             self.fibrils.append( fib )
             self.CMM.add( fib.mesh )
@@ -74,7 +76,7 @@ class Warp():
         self.contacts = []
         self.contact_cutoff = cutoff
 
-
+        self.monolithic = monolithic
     
     def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
@@ -113,20 +115,9 @@ class Warp():
         dim = np.array([gN,gN],dtype=np.intc)
         local_dofs = np.array([0,gN,0,gN],dtype=np.intc)
 
-        M = Matrix()
+        AT = Matrix()
         assem = BroadcastAssembler()
-        assem.init_global_tensor(M,dim,2,0, local_dofs, self.Tmdof.off_process_owner())
-        for i,fib in enumerate(self.fibrils):
-            assem.sparsity_form(self.fibrils[i].MTform, self.Tmdof.part(i)) # crashing here?
-        assem.sparsity_apply()
-        for i,fib in enumerate(self.fibrils):
-            assem.assemble_form(self.fibrils[i].MTform, self.Tmdof.part(i))
-        M.apply('add')
-
-        
-        AX = Matrix()
-        assem = BroadcastAssembler()
-        assem.init_global_tensor(AX,dim,2,0, local_dofs, self.Tmdof.off_process_owner())
+        assem.init_global_tensor(AT,dim,2,0, local_dofs, self.Tmdof.off_process_owner())
         for i,fib in enumerate(self.fibrils):
             assem.sparsity_form(self.fibrils[i].ATform, self.Tmdof.part(i))
 
@@ -147,14 +138,14 @@ class Warp():
                                      cp.pair_flattened,
                                      cp.chi_X_table.flatten(),
                                      cp.chi_n_max)
-        AX.apply('add')
+        AT.apply('add')
 
-        R = Vector()
+        RT = Vector()
         
         assem = BroadcastAssembler()
         dim = np.array([gN],dtype=np.intc)
         local_dofs = np.array([0,gN],dtype=np.intc)
-        assem.init_global_tensor(R,dim,1,0, local_dofs,self.Tmdof.off_process_owner())
+        assem.init_global_tensor(RT,dim,1,0, local_dofs,self.Tmdof.off_process_owner())
         assem.sparsity_apply()
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].FTform, self.Tmdof.part(i))
@@ -166,11 +157,65 @@ class Warp():
                                      cp.pair_flattened,
                                      cp.chi_X_table.flatten(),
                                      cp.chi_n_max)
-        R.apply('add')
+        RT.apply('add')
 
-        self.MT = M
-        self.AT = AX
-        self.RT = R
+        self.AT = AT
+        self.RT = RT
+
+        
+    def assemble_voltage_system(self):
+        from BroadcastAssembler import BroadcastAssembler
+        gN = self.Vmdof.global_dimension()
+        dim = np.array([gN,gN],dtype=np.intc)
+        local_dofs = np.array([0,gN,0,gN],dtype=np.intc)
+
+        AVol = Matrix()
+        assem = BroadcastAssembler()
+        assem.init_global_tensor(AVol,dim,2,0, local_dofs, self.Tmdof.off_process_owner())
+        for i,fib in enumerate(self.fibrils):
+            assem.sparsity_form(self.fibrils[i].AVolForm, self.Tmdof.part(i))
+
+        for i,cp in enumerate(self.contacts):
+            assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].AVolForm, 
+                                     cp.meshA, self.Tmdof.part(self.fibril_pairs[i][0]),
+                                     cp.meshB, self.Tmdof.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened)
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].AVolForm, self.Tmdof.part(i))
+
+        for i,cp in enumerate(self.contacts):
+            assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].AVolForm, 
+                                     cp.meshA, self.Tmdof.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][1]].AVolForm, 
+                                     cp.meshB, self.Tmdof.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened,
+                                     cp.chi_X_table.flatten(),
+                                     cp.chi_n_max)
+        AVol.apply('add')
+
+        RT = Vector()
+        
+        assem = BroadcastAssembler()
+        dim = np.array([gN],dtype=np.intc)
+        local_dofs = np.array([0,gN],dtype=np.intc)
+        assem.init_global_tensor(RVol,dim,1,0, local_dofs,self.Tmdof.off_process_owner())
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].FVform, self.Tmdof.part(i))
+        for i,cp in enumerate(self.contacts):
+            assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].FVform, 
+                                     cp.meshA, self.Tmdof.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][1]].FVform, 
+                                     cp.meshB, self.Tmdof.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened,
+                                     cp.chi_X_table.flatten(),
+                                     cp.chi_n_max)
+        RVol.apply('add')
+
+        self.AVol = AVol
+        self.RVol = RVol
+
         
     def assemble_mass(self):
         from BroadcastAssembler import BroadcastAssembler
@@ -190,6 +235,24 @@ class Warp():
         
         self.M = M
 
+        if self.monolithic:
+            return
+        gN = self.Tmdof.global_dimension()
+        dim = np.array([gN,gN],dtype=np.intc)
+        local_dofs = np.array([0,gN,0,gN],dtype=np.intc)
+        
+        MT = Matrix()
+        assem = BroadcastAssembler()
+        assem.init_global_tensor(MT,dim,2,0, local_dofs, self.Tmdof.off_process_owner())
+        for i,fib in enumerate(self.fibrils):
+            assem.sparsity_form(self.fibrils[i].MTform, self.Tmdof.part(i)) # crashing here?
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].MTform, self.Tmdof.part(i))
+        MT.apply('add')
+
+        self.MT = MT
+        
     def assemble_system(self):
         from BroadcastAssembler import BroadcastAssembler
         gN = self.mdof.global_dimension()
@@ -289,6 +352,7 @@ class Warp():
         # bcright.apply(self.AX,self.R)
         bcall.apply(self.AT,self.RT)
         bcright.apply(self.AT,self.RT)
+
     def apply_multi_bcs(self,uend=None):
         zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0))
         if not uend:
