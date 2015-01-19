@@ -13,8 +13,8 @@ Main entry point of the simulation.
 
 """
 
-from Warp import Warp
-from DIRK import DIRK_Monolithic
+from src import Warp
+from src.DIRK import DIRK_Monolithic
 
 endpts = [ [ [-10.0, 0.0,-1.0],  [10.0, 0.0, -1.0] ] ]
 
@@ -75,7 +75,7 @@ def solve(order,NT):
                 warp.fibrils[0].wv.eval(weval,p[0])
             time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
-        # warp.output_states("../post/fibril_time_{0}_"+str(t)+".pvd",1)
+        # warp.output_states("post/fibril_time_{0}_"+str(t)+".pvd",1)
     return (times,time_series,h,order)
 
 

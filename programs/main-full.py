@@ -13,7 +13,7 @@ Main entry point of the simulation.
 
 """
 
-from Warp import Warp
+from src import Warp
 
 endpts = [ [ [-10.0, 0.0,-1.0],  [10.0, 0.0, -1.0] ] ]
 
