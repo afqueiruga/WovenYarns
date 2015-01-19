@@ -41,6 +41,23 @@ class Fibril():
 
         self.Height = 1.0
         self.Width = 1.0
+    def build_iterative_form(self):
+        self.wx = Function(self.W)
+        self.wv = Function(self.W)
+        self.T = Function(self.S)
+        self.Vol = Function(self.S)
+        
+        self.X0 = Function(self.V)
+        self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
+        
+        self.Fform,self.Mform,self.AXform,self.AVform,
+        self.FTform,self.MTform,self.ATform,
+        self.FVform,self.AVform,
+        self.Ez,self.E1,self.E2 = \
+          MultiphysicsForm(self.W,self.V,self.S,
+                           self.wx,self.wv,self.T,self.Vol,
+                           self.X0, self.orientation,self.radius)
+        
     def build_thermal_form(self):
         self.X0 = Function(self.V)
         self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))

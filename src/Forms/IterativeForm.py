@@ -12,7 +12,7 @@ The forms are coupled, but the tangents are only for the fields themselves.
 
 from dolfin import *
 
-def MultiphysicsForm(W,V,S,wx,wv,T,V,X0, orientation=0,radius=1.0):
+def IterativeForm(W,V,S,wx,wv,T,Vol,X0, orientation=0,radius=1.0):
     vr,vg1,vg2 = split(wv)
     r,g1,g2 = split(wx)
 
@@ -148,6 +148,6 @@ def MultiphysicsForm(W,V,S,wx,wv,T,V,X0, orientation=0,radius=1.0):
     AV = derivative(FVform,V,DelV)
     
     return Form(Fform),Form(Mform),Form(AXform),Form(AVform), \
-      Form(FTForm),Form(MTform),Form(ATform)
-      Form(FVForm),Form(AVform),
+      Form(FTForm),Form(MTform),Form(ATform), \
+      Form(FVForm),Form(AVform), \
       Ez,E1,E2
