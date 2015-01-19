@@ -25,6 +25,7 @@ class Fibril():
             self.W = MixedFunctionSpace([self.V,self.V,self.V])
         if wx and wv:
             build_form(wx,wv)
+        self.monolithic = monolithic
         self.orientation=orientation
         self.radius=radius
         
@@ -108,9 +109,14 @@ class Fibril():
         """
         from multiwriter.multiwriter import VTKAppender
         vfile = VTKAppender(fname,"ascii")
-
-        q,h1,h2, Tnull, Vnull    = self.wx.split()
-        vq,vh1,vh2,T,Vol = self.wv.split()
+        if self.monolithic:
+            q,h1,h2, Tnull, Vnull    = self.wx.split()
+            vq,vh1,vh2,T,Vol = self.wv.split()
+        else:
+            q,h1,h2    = self.wx.split()
+            vq,vh1,vh2 = self.wv.split()
+            T = self.T
+            Vol = self.Vol
         q.rename("q","field")
         h1.rename("h1","field")
         h2.rename("h2","field")
@@ -125,14 +131,13 @@ class Fibril():
         # q1.interpolate(Height/2.0*Constant((0.0,1.0,0.0))+h1)
         # q2 = Function(V)
         # q2.interpolate(Width/2.0*Constant((0.0,0.0,1.0))+h2)
-        g1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
+        g1 = project(self.radius*Constant((0.0,1.0,0.0))+h1,self.V)
         g1.rename("g1","field")
-        g2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
+        g2 = project(self.radius*Constant((0.0,0.0,1.0))+h2,self.V)
         g2.rename("g2","field")
 
-        self.T.rename("Tself","field")
         self.X0.rename("X0","field")
-        vfile.write(i,[q,h1,h2,g1,g2, vq,vh1,vh2, T, Vol,self.X0,self.T],[])
+        vfile.write(i,[q,h1,h2,g1,g2, vq,vh1,vh2, T, Vol,self.X0],[])
         # vfile = VTKAppender(fname,"ascii")
     def write_surface(self,fname,i,NT=16,Lnum=200,Lmax=100.0):
         """
@@ -140,9 +145,14 @@ class Fibril():
         """
         from multiwriter.multiwriter import VTKAppender
         vfile = VTKAppender(fname,"ascii")
-
-        q,h1,h2, Tnull, Vnull    = self.wx.split()
-        vq,vh1,vh2,T,Vol = self.wv.split()
+        if self.monolithic:
+            q,h1,h2, Tnull, Vnull    = self.wx.split()
+            vq,vh1,vh2,T,Vol = self.wv.split()
+        else:
+            q,h1,h2    = self.wx.split()
+            vq,vh1,vh2 = self.wv.split()
+            T = self.T
+            Vol = self.Vol
 
         g1 = project(self.radius*self.E1+h1,self.V)
         g1.rename("g1","field")
