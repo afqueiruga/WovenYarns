@@ -1,9 +1,7 @@
 from dolfin import *
 import numpy as np
 
-from BeamForm import BeamForm
-from ThermalForm import ThermalForm
-from MultiphysicsForm import MultiphysicsForm
+from Forms import BeamForm, ThermalForm, MultiphysicsForm, IterativeForm
 
 """
 
@@ -12,7 +10,7 @@ This is a base class for the director-based Fibril
 """
 from IPython import embed
 class Fibril():
-    def __init__(self,mesh,orientation=0, radius=0.075, wx=None,wv=None):
+    def __init__(self,mesh,orientation=0, monolithic=True, radius=0.075, wx=None,wv=None):
         """
         Create a new Fibril on a given mesh. It better be a line mesh.
         Dirrichlet BCs by default.
@@ -21,9 +19,13 @@ class Fibril():
         self.current_mesh = Mesh(mesh)
         self.V = VectorFunctionSpace(mesh,"CG",1)
         self.S = FunctionSpace(mesh,"CG",1)
-        self.W = MixedFunctionSpace([self.V,self.V,self.V,self.S,self.S])
+        if monolithic:
+            self.W = MixedFunctionSpace([self.V,self.V,self.V,self.S,self.S])
+        else:
+            self.W = MixedFunctionSpace([self.V,self.V,self.V])
         if wx and wv:
             build_form(wx,wv)
+        self.monolithic = monolithic
         self.orientation=orientation
         self.radius=radius
         
@@ -43,6 +45,23 @@ class Fibril():
 
         self.Height = 1.0
         self.Width = 1.0
+    def build_iterative_form(self):
+        self.wx = Function(self.W)
+        self.wv = Function(self.W)
+        self.T = Function(self.S)
+        self.Vol = Function(self.S)
+        
+        self.X0 = Function(self.V)
+        self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
+        
+        self.Fform,self.Mform,self.AXform,self.AVform, \
+        self.FTform,self.MTform,self.ATform, \
+        self.FVform,self.AVform, \
+        self.Ez,self.E1,self.E2 = \
+          IterativeForm(self.W,self.V,self.S,
+                           self.wx,self.wv,self.T,self.Vol,
+                           self.X0, self.orientation,self.radius)
+        
     def build_thermal_form(self):
         self.X0 = Function(self.V)
         self.X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
@@ -90,9 +109,14 @@ class Fibril():
         """
         from multiwriter.multiwriter import VTKAppender
         vfile = VTKAppender(fname,"ascii")
-
-        q,h1,h2, Tnull, Vnull    = self.wx.split()
-        vq,vh1,vh2,T,Vol = self.wv.split()
+        if self.monolithic:
+            q,h1,h2, Tnull, Vnull    = self.wx.split()
+            vq,vh1,vh2,T,Vol = self.wv.split()
+        else:
+            q,h1,h2    = self.wx.split()
+            vq,vh1,vh2 = self.wv.split()
+            T = self.T
+            Vol = self.Vol
         q.rename("q","field")
         h1.rename("h1","field")
         h2.rename("h2","field")
@@ -107,14 +131,13 @@ class Fibril():
         # q1.interpolate(Height/2.0*Constant((0.0,1.0,0.0))+h1)
         # q2 = Function(V)
         # q2.interpolate(Width/2.0*Constant((0.0,0.0,1.0))+h2)
-        g1 = project(self.Height/2.0*Constant((0.0,1.0,0.0))+h1,self.V)
+        g1 = project(self.radius*Constant((0.0,1.0,0.0))+h1,self.V)
         g1.rename("g1","field")
-        g2 = project(self.Width/2.0*Constant((0.0,0.0,1.0))+h2,self.V)
+        g2 = project(self.radius*Constant((0.0,0.0,1.0))+h2,self.V)
         g2.rename("g2","field")
 
-        self.T.rename("Tself","field")
         self.X0.rename("X0","field")
-        vfile.write(i,[q,h1,h2,g1,g2, vq,vh1,vh2, T, Vol,self.X0,self.T],[])
+        vfile.write(i,[q,h1,h2,g1,g2, vq,vh1,vh2, T, Vol,self.X0],[])
         # vfile = VTKAppender(fname,"ascii")
     def write_surface(self,fname,i,NT=16,Lnum=200,Lmax=100.0):
         """
@@ -122,9 +145,14 @@ class Fibril():
         """
         from multiwriter.multiwriter import VTKAppender
         vfile = VTKAppender(fname,"ascii")
-
-        q,h1,h2, Tnull, Vnull    = self.wx.split()
-        vq,vh1,vh2,T,Vol = self.wv.split()
+        if self.monolithic:
+            q,h1,h2, Tnull, Vnull    = self.wx.split()
+            vq,vh1,vh2,T,Vol = self.wv.split()
+        else:
+            q,h1,h2    = self.wx.split()
+            vq,vh1,vh2 = self.wv.split()
+            T = self.T
+            Vol = self.Vol
 
         g1 = project(self.radius*self.E1+h1,self.V)
         g1.rename("g1","field")
