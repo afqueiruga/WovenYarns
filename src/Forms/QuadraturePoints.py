@@ -71,6 +71,38 @@ if __name__=="__main__":
     plot_points(CircCart2D[8])
     plt.figure()
     plot_points(CircCart2D[16])
+
+    # These functions and values are generated in the
+    # mathematica notebook QuadratureUnitTests.nb
+    trialfunctions = [
+        lambda x, y: 1,
+        lambda x, y: x,
+        lambda x, y: (x**2),
+        lambda x, y: (x**3),
+        lambda x, y: (x**4),
+        lambda x, y: (x**2) + (y**2),
+        lambda x, y: (x**2)*(y**2),
+        lambda x, y: (x**3)*(y**3)]
+    circvalues = [
+        6.2831853071795864769,
+        0,
+        1.0471975511965977462,
+        0,
+        0.47123889803846898577,
+        2.0943951023931954923,
+        0.15707963267948966192,
+        0
+    ]
+    squarevalues = [
+        4.0000000000000000000,
+        0,
+        1.3333333333333333333,
+        0,
+        0.80000000000000000000,
+        2.6666666666666666667,
+        0.44444444444444444444,
+        0
+    ]
     plt.show()
     
     
