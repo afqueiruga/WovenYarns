@@ -19,50 +19,57 @@ from src.DIRK import DIRK_Monolithic
 #
 # Some parameters
 #
-Rate = 0.1
-Tmax = 1.0
+Rate = 0.01*np.pi
+Tmax = 200.0
 NT = 100
 
 #
 # Define the end points
 #
 pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
-    [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
-    [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
+        [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
+        [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
 
 endpts = []
-scale = 0.15
+scale = 0.16
 for l in pattern:
-    endpts.append([ [ scale*l[0], -5.0, scale*l[1] ], [ scale*l[0], 5.0, scale*l[1] ] ])
+    endpts.append([ [ -5.0,  scale*l[0], scale*l[1] ], [ 5.0, scale*l[0], scale*l[1] ] ])
 
-warp = Warp(endpts, monolithic=False, cutoff=0.5)
+warp = Warp(endpts, monolithic=True, cutoff=0.5)
 
 
 #
 # Set up the BC applying routines
 #
-zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
+zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0))
+# rotate = Expression((" 0.0",
+#                     " 0.0", " rate",
+#                     "0.0","0.0","0.0", "0.0","0.0","0.0",  "0.0","0.0"),
+#                     rate=Rate,
+#                     theta=0.0,
+#                     old_theta=0.0)
 rotate = Expression((" 0.0",
-                    "-(x[1]*cos(theta)-x[2]*sin(theta)-x[1]-(x[1]*cos(old_theta)-x[2]*sin(old_theta)-x[1]))",
-                    "-(x[2]*cos(theta)+x[1]*sin(theta)-x[2]-(x[2]*cos(old_theta)+x[1]*sin(old_theta)-x[2]))",
-                    "0.0","0.0","0.0", "0.0","0.0","0.0"),
+                    "-rate*(x[1]*sin(theta)+x[2]*cos(theta))",
+                    "-rate*(x[2]*sin(theta)-x[1]*cos(theta))",
+                    "0.0","0.0","0.0", "0.0","0.0","0.0", "0.0","0.0"),
+                    rate=Rate,
                     theta=0.0,
                     old_theta=0.0)
 
-left = CompiledSubDomain("near(x[1], side) && on_boundary", side = -5.0)
-right = CompiledSubDomain("near(x[1], side) && on_boundary", side = 5.0)
+left = CompiledSubDomain("near(x[0], side) && on_boundary", side = -5.0)
+right = CompiledSubDomain("near(x[0], side) && on_boundary", side = 5.0)
 bcleft = MultiMeshDirichletBC(warp.mmfs, zero, left)
 bcright =  MultiMeshDirichletBC(warp.mmfs, rotate, right)
 def apply_BCs(K,R,t,hold=False):
-    rotate.theta = Rate*t*np.pi
-    rotate.old_theta=Rate*(t-1.0)*np.pi
+    rotate.theta = Rate*t
+    rotate.old_theta=Rate*(t-1.0)
     bcleft.apply(K,R)
     if not hold:
         bcright = MultiMeshDirichletBC(warp.mmfs, rotate, right)
     else:
         bcright = MultiMeshDirichletBC(warp.mmfs, zero, right)
     bcright.apply(K,R)
-
+    # embed() 
 
 #
 # Set up initial conditions
@@ -83,7 +90,7 @@ warp.create_contacts()
 warp.output_states("post/yarn_time_{0}_"+str(0)+".pvd",1)
 warp.output_surfaces("post/yarnmesh_time_{0}_"+str(0)+".pvd",1)
 for t in xrange(NT):
-    dirk.march()
+    dirk.march(t*Tmax/NT)
     warp.output_states("post/yarn_time_{0}_"+str(t+1)+".pvd",1)
     warp.output_surfaces("post/yarnmesh_time_{0}_"+str(t+1)+".pvd",1)
 
