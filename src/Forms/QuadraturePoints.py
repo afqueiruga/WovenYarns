@@ -38,6 +38,16 @@ def RectOuterProd(ordx,ordy=None):
 CircPolar2D = {4:[],8:[],16:[]}
 for i in xrange(4):
     CircPolar2D[4].append([np.sqrt(2.0)/2.0,np.pi*(i/2.0), np.pi/4.0])
+for i in xrange(4):
+    CircPolar2D[8].append(
+        [np.sqrt(1.0+np.sqrt(3.0)/3.0), np.pi*((2*i)/4.0), np.pi*(2.0-np.sqrt(3.0))/16.0])
+    CircPolar2D[8].append(
+        [np.sqrt(1.0-np.sqrt(3.0)/3.0), np.pi*((2*i+1)/4.0), np.pi*(2.0+np.sqrt(3.0))/16.0])
+for i in xrange(8):
+    CircPolar2D[16].append(
+        [np.sqrt(0.5+np.sqrt(3.0)/6.0), np.pi*((2*i)/8.0), np.pi/16.0])
+    CircPolar2D[16].append(
+        [np.sqrt(0.5-np.sqrt(3.0)/6.0), np.pi*((2*i+1)/8.0), np.pi/16.0])
 
 # Now put them into cartisian coordinates
 CircCart2D = {}
@@ -49,14 +59,18 @@ for k,rule in CircPolar2D.iteritems():
 if __name__=="__main__":
     from matplotlib import pylab as plt
     def plot_points(pts):
-        plt.xlim(-1,1)
-        plt.ylim(-1,1)
+        plt.xlim(-2,2)
+        plt.ylim(-2,2)
         plt.plot([ z1 for z1,z2,w in pts], [z2 for z1,z2,w in pts],'x')
     plot_points(RectOuterProd(2,3))
     plt.figure()
     plot_points(RectOuterProd(2))
+    plt.figure()
+    plot_points(CircCart2D[4])
+    plt.figure()
+    plot_points(CircCart2D[8])
+    plt.figure()
+    plot_points(CircCart2D[16])
     plt.show()
-    print CircPolar2D
-    print CircCart2D
-
+    
     
