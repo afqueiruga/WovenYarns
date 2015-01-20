@@ -11,6 +11,8 @@ The forms are coupled, but the tangents are only for the fields themselves.
 """
 
 from dolfin import *
+from QuadraturePoints import RectOuterProd,CircCart2D
+
 
 def IterativeForm(W,V,S,wx,wv,T,Vol,X0, orientation=0,radius=1.0):
     vr,vg1,vg2 = split(wv)
@@ -58,16 +60,8 @@ def IterativeForm(W,V,S,wx,wv,T,Vol,X0, orientation=0,radius=1.0):
     #
     # Gauss points
     #
-    # GPS1D = [ [ 0.0,       8.0/9.0 ],
-    #           [ sqrt(3.0/5.0), 5.0/9.0 ],
-    #           [-sqrt(3.0/5.0), 5.0/9.0 ] ]
-    GPS1D = [ [ sqrt(1.0/3.0), 1.0],
-              [-sqrt(1.0/3.0), 1.0] ]
-    GPS2D = []
-    for z1,w1 in GPS1D:
-        for z2,w2 in GPS1D:
-            GPS2D.append([z1,z2,w1*w2])
-
+    
+    GPS2D = CircCart2D[4]
     
     Psi = None
     FExt = None
