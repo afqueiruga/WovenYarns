@@ -56,22 +56,31 @@ for k,rule in CircPolar2D.iteritems():
 # TODO: I don't like the numerical roundoff... should turn this into
 # a Mathematica script that does exact arithmetic until the last stage
 
-if __name__=="__main__":
-    from matplotlib import pylab as plt
-    def plot_points(pts):
-        plt.xlim(-2,2)
-        plt.ylim(-2,2)
-        plt.plot([ z1 for z1,z2,w in pts], [z2 for z1,z2,w in pts],'x')
-    plot_points(RectOuterProd(2,3))
-    plt.figure()
-    plot_points(RectOuterProd(2))
-    plt.figure()
-    plot_points(CircCart2D[4])
-    plt.figure()
-    plot_points(CircCart2D[8])
-    plt.figure()
-    plot_points(CircCart2D[16])
+def apply_2D_rule(f,rule):
+    " Nonoptimally compute a given 2D rule on a function "
+    res = 0.0
+    for z1,z2,w in rule:
+        res+=f(z1,z2)*w
+    return res
 
+if __name__=="__main__":
+    def plot_all_rules():
+        " Look at all of the rules... Kinda annoying to do every time "
+        from matplotlib import pylab as plt
+        def plot_points(pts):
+            plt.xlim(-2,2)
+            plt.ylim(-2,2)
+            plt.plot([ z1 for z1,z2,w in pts], [z2 for z1,z2,w in pts],'x')
+        plot_points(RectOuterProd(2,3))
+        plt.figure()
+        plot_points(RectOuterProd(2))
+        plt.figure()
+        plot_points(CircCart2D[4])
+        plt.figure()
+        plot_points(CircCart2D[8])
+        plt.figure()
+        plot_points(CircCart2D[16])
+        plt.show()
     # These functions and values are generated in the
     # mathematica notebook QuadratureUnitTests.nb
     trialfunctions = [
@@ -84,13 +93,13 @@ if __name__=="__main__":
         lambda x, y: (x**2)*(y**2),
         lambda x, y: (x**3)*(y**3)]
     circvalues = [
-        6.2831853071795864769,
+        3.1415926535897932385,
         0,
-        1.0471975511965977462,
+        0.78539816339744830962,
         0,
-        0.47123889803846898577,
-        2.0943951023931954923,
-        0.15707963267948966192,
+        0.39269908169872415481,
+        1.5707963267948966192,
+        0.13089969389957471827,
         0
     ]
     squarevalues = [
@@ -103,6 +112,17 @@ if __name__=="__main__":
         0.44444444444444444444,
         0
     ]
-    plt.show()
     
     
+    def test_rule(rule,trials,exacts):
+        " Test a given rule on the trial functions "
+        for f,ex in zip(trials,exacts):
+            print np.abs(ex-apply_2D_rule(f,rule)), " ",
+        print
+    for numpts,rule in CircCart2D.iteritems():
+        print "Testing Circle rule ",numpts
+        test_rule(rule,trialfunctions,circvalues)
+    for ordx,ordy in [(2,2),(2,3),(3,2),(3,3)]:
+        print "Testing Outer product rule ",ordx," x ",ordy
+        rule = RectOuterProd(ordx,ordy)
+        test_rule(rule,trialfunctions,squarevalues)
