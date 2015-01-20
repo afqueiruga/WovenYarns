@@ -5,7 +5,7 @@ The form for the beam element with thermal and EM problems in it.
 """
 
 from dolfin import *
-from QuadraturePoints import RectOuterProd
+from QuadraturePoints import RectOuterProd,CircCart2D
 
 def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0,radius=1.0):
     vr,vg1,vg2,T,Vol = split(wv)
@@ -45,7 +45,7 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0,radius=1.0):
     #
     # Gauss points
     #
-    GPS2D = RectOuterProd(2)
+    GPS2D = CircCart2D[4]
 
     
     Psi = None

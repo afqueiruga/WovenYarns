@@ -81,8 +81,10 @@ if __name__=="__main__":
         plt.figure()
         plot_points(CircCart2D[16])
         plt.show()
+    
     # These functions and values are generated in the
     # mathematica notebook QuadratureUnitTests.nb
+    # TODO: file input, copy and paste is messy
     trialfunctions = [
         lambda x, y: 1,
         lambda x, y: x,
