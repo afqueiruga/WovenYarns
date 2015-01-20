@@ -17,9 +17,9 @@ class DIRK_Monolithic():
         self.V0 = MultiMeshFunction(warp.mmfs)
         self.DelW = MultiMeshFunction(warp.mmfs)
         if order==1:
-            self.RK_b = np.array([ 1.0 ], dtype.np.double)
+            self.RK_b = np.array([ 1.0 ], dtype=np.double)
             self.RK_a = np.array([ [1.0]], dtype=np.double)
-            self.RK_c = np.array([ 1.0 ], dtype.np.double)
+            self.RK_c = np.array([ 1.0 ], dtype=np.double)
         elif order==3:
             alpha = 0.43586652150845899942
             tau = (1.0+alpha)/2.0
@@ -32,10 +32,10 @@ class DIRK_Monolithic():
             self.RK_c = np.array( [ alpha, tau, 1.0 ], dtype=np.double)
         else:
             RK_alpha = 1.0-0.5*sqrt(2.0)
-            self.RK_b = np.array([ RK_alpha, 1.0 ])
+            self.RK_b = np.array([ RK_alpha, 1.0 ], dtype=np.double)
             self.RK_a = np.array([ [RK_alpha, 0.0],
-                  [1.0-RK_alpha, RK_alpha] ], dtype=np.double)
-            self.RK_c = np.array([ RK_alpha, 1.0 ])
+                                    [1.0-RK_alpha, RK_alpha] ], dtype=np.double)
+            self.RK_c = np.array([ RK_alpha, 1.0 ], dtype=np.double)
 
         
     def march(self,time=0.0):
