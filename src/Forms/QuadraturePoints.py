@@ -26,6 +26,13 @@ def RectOuterProd(ordx,ordy=None):
 
 
 if __name__=="__main__":
+    from matplotlib import pylab as plt
+    def plot_points(pts):
+        plt.xlim(-1,1)
+        plt.ylim(-1,1)
+        plt.plot([ z1 for z1,z2,w in pts], [z2 for z1,z2,w in pts],'x')
+    plot_points(RectOuterProd(2,3))
+    plt.show()
     print RectOuterProd(2,2)
     print RectOuterProd(2,3)
     print RectOuterProd(3)
