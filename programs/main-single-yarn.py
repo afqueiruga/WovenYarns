@@ -35,13 +35,13 @@ scale = 0.15
 for l in pattern:
     endpts.append([ [ scale*l[0], -5.0, scale*l[1] ], [ scale*l[0], 5.0, scale*l[1] ] ])
 
-warp = Warp(endpts, cutoff=0.5)
+warp = Warp(endpts, monolithic=False, cutoff=0.5)
 
 
 #
 # Set up the BC applying routines
 #
-zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0))
+zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 rotate = Expression((" 0.0",
                     "-(x[1]*cos(theta)-x[2]*sin(theta)-x[1]-(x[1]*cos(old_theta)-x[2]*sin(old_theta)-x[1]))",
                     "-(x[2]*cos(theta)+x[1]*sin(theta)-x[2]-(x[2]*cos(old_theta)+x[1]*sin(old_theta)-x[2]))",
@@ -49,16 +49,16 @@ rotate = Expression((" 0.0",
                     theta=0.0,
                     old_theta=0.0)
 
-left = CompiledSubDomain("near(x[1], side) && on_boundary", side = -10.0)
-right = CompiledSubDomain("near(x[1], side) && on_boundary", side = 10.0)
+left = CompiledSubDomain("near(x[1], side) && on_boundary", side = -5.0)
+right = CompiledSubDomain("near(x[1], side) && on_boundary", side = 5.0)
 bcleft = MultiMeshDirichletBC(warp.mmfs, zero, left)
 bcright =  MultiMeshDirichletBC(warp.mmfs, rotate, right)
 def apply_BCs(K,R,t,hold=False):
-    rotate.theta = Rate*t*np.pi,
+    rotate.theta = Rate*t*np.pi
     rotate.old_theta=Rate*(t-1.0)*np.pi
     bcleft.apply(K,R)
     if not hold:
-        bcright = MultiMeshDirichletBC(warp.mmfs, extend, right)
+        bcright = MultiMeshDirichletBC(warp.mmfs, rotate, right)
     else:
         bcright = MultiMeshDirichletBC(warp.mmfs, zero, right)
     bcright.apply(K,R)
@@ -78,6 +78,7 @@ dirk = DIRK_Monolithic(1, Tmax/NT, warp, warp.assemble_system, warp.update, appl
 #
 # Loop away
 #
+warp.assemble_mass()
 warp.create_contacts()
 warp.output_states("post/yarn_time_{0}_"+str(0)+".pvd",1)
 warp.output_surfaces("post/yarnmesh_time_{0}_"+str(0)+".pvd",1)

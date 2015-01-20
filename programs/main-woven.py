@@ -17,8 +17,8 @@ from src import Warp
 from src.DIRK import DIRK_Monolithic
 
 pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
-    [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
-    [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
+            [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
+            [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
 
 endpts = []
 
