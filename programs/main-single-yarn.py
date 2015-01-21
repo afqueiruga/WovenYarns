@@ -19,25 +19,27 @@ from src.DIRK import DIRK_Monolithic
 #
 # Some parameters
 #
-Rate = 0.01*np.pi
-Tmax = 200.0
-NT = 100
+Rate = 0.001*np.pi
+Tmax = 6000.0
+NT = 200
 
 #
 # Define the end points
 #
-pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
-        [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
-        [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
+# pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
+#         [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
+#         [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
 
-endpts = []
-scale = 0.16
-for l in pattern:
-    endpts.append([ [ -5.0,  scale*l[0], scale*l[1] ], [ 5.0, scale*l[0], scale*l[1] ] ])
-
+# endpts = []
+# scale = 0.16
+# for l in pattern:
+#     endpts.append([ [ -5.0,  scale*l[0], scale*l[1] ], [ 5.0, scale*l[0], scale*l[1] ] ])
+endpts = [[ [ -5.0, 0.074, 0.0], [ 5.0, 0.074, 0.0 ] ],
+    [ [ -5.0,  -0.074, 0.0 ], [ 5.0, -0.074, 0.0 ] ]]
 warp = Warp(endpts, monolithic=True, cutoff=0.5)
 
-
+# contactpairs = [ (0,3), (1,3), (2,3),
+#                  (4,3), (5,3), (6,3) ]
 #
 # Set up the BC applying routines
 #
@@ -49,8 +51,8 @@ zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0))
 #                     theta=0.0,
 #                     old_theta=0.0)
 rotate = Expression((" 0.0",
-                    "-rate*(x[1]*sin(theta)+x[2]*cos(theta))",
-                    "-rate*(x[2]*sin(theta)-x[1]*cos(theta))",
+                    "rate*(-x[1]*(sin(theta)-sin(old_theta))+x[2]*(cos(theta)-cos(old_theta)))",
+                    "rate*(-x[1]*(cos(theta)-cos(old_theta))-x[2]*(sin(theta)-sin(old_theta)))",
                     "0.0","0.0","0.0", "0.0","0.0","0.0", "0.0","0.0"),
                     rate=Rate,
                     theta=0.0,
@@ -61,10 +63,14 @@ right = CompiledSubDomain("near(x[0], side) && on_boundary", side = 5.0)
 bcleft = MultiMeshDirichletBC(warp.mmfs, zero, left)
 bcright =  MultiMeshDirichletBC(warp.mmfs, rotate, right)
 def apply_BCs(K,R,t,hold=False):
-    rotate.theta = Rate*t
-    rotate.old_theta=Rate*(t-1.0)
+    
     bcleft.apply(K,R)
     if not hold:
+        print t
+        rotate.old_theta = float(rotate.theta)
+        rotate.theta = Rate*t
+        print rotate.old_theta
+        print rotate.theta
         bcright = MultiMeshDirichletBC(warp.mmfs, rotate, right)
     else:
         bcright = MultiMeshDirichletBC(warp.mmfs, zero, right)
@@ -74,8 +80,17 @@ def apply_BCs(K,R,t,hold=False):
 #
 # Set up initial conditions
 #
-# Nope fuck it, they're zero anyways
-
+# Nope fuck it, they're zero anyways Gah im an idiot
+for i,fib in enumerate(warp.fibrils):
+    fib.wv.interpolate(Expression((" 0.0",
+                    "rate*(-x[1]*(sin(theta))+x[2]*(cos(theta)))*(x[0]+5.0)/10.0",
+                    "rate*(-x[1]*(cos(theta))-x[2]*(sin(theta)))*(x[0]+5.0)/10.0",
+                    "0.0","0.0","0.0", "0.0","0.0","0.0", "0.0","0.0"),
+                    rate=Rate,
+                    theta=0.0,
+                    old_theta=0.0))
+    warp.wx.vector()[ warp.mdof.part(i).dofs() ] = fib.wx.vector()[:]
+    warp.wv.vector()[ warp.mdof.part(i).dofs() ] = fib.wv.vector()[:]
 #
 # Create the timestepper
 #
