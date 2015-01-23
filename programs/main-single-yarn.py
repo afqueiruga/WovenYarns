@@ -26,16 +26,16 @@ NT = 200
 #
 # Define the end points
 #
-# pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
-#         [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
-#         [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
+pattern = [ [-0.5,sqrt(3.0)/2.0], [0.5,sqrt(3.0)/2.0],
+        [-1.0,0.0], [0.0, 0.0], [1.0,0.0],
+        [-0.5,-sqrt(3.0)/2.0], [ 0.5,-sqrt(3.0)/2.0] ]
 
-# endpts = []
-# scale = 0.16
-# for l in pattern:
-#     endpts.append([ [ -5.0,  scale*l[0], scale*l[1] ], [ 5.0, scale*l[0], scale*l[1] ] ])
-endpts = [[ [ -5.0, 0.074, 0.0], [ 5.0, 0.074, 0.0 ] ],
-    [ [ -5.0,  -0.074, 0.0 ], [ 5.0, -0.074, 0.0 ] ]]
+endpts = []
+scale = 0.16
+for l in pattern:
+    endpts.append([ [ -5.0,  scale*l[0], scale*l[1] ], [ 5.0, scale*l[0], scale*l[1] ] ])
+# endpts = [[ [ -5.0, 0.074, 0.0], [ 5.0, 0.074, 0.0 ] ],
+#     [ [ -5.0,  -0.074, 0.0 ], [ 5.0, -0.074, 0.0 ] ]]
 warp = Warp(endpts, monolithic=True, cutoff=0.5)
 
 # contactpairs = [ (0,3), (1,3), (2,3),
