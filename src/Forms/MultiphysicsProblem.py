@@ -1,28 +1,47 @@
 from ProblemDescription import *
 from QuadraturePoints import RectOuterProd,CircCart2D
 
+E = 1.0
+nu = 0.0
+default_properties = {
+    'E':E, 'nu':nu,
+    'mu':E/(2*(1 + nu)),
+    'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
+    'mu_alpha':-0.03,
+    'rho': 1.0,
+    'T_cp':1.0,
+    'T_k': 1.0,
+    'em_B':Constant((0.0,0.0,0.0)),
+    'em_sig':10.0,
+    'radius':0.15
+}
 class MultiphysicsProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
     def __init__(self,mesh,properties,orientation=0):
         if properties.has_key("orientation"):
             orientation = properties["orientation"]
             properties.pop("orientation",None)
-        ProblemDescription.__init__(self,mesh,properties)
 
         if orientation == 0:
-            self.properties["Ez"] = Constant((1.0,0.0,0.0))
-            self.properties["E1"] = Constant((0.0,1.0,0.0))
-            self.properties["E2"] = Constant((0.0,0.0,1.0))
+            properties["Ez"] = Constant((1.0,0.0,0.0))
+            properties["E1"] = Constant((0.0,1.0,0.0))
+            properties["E2"] = Constant((0.0,0.0,1.0))
         elif orientation == 1:
-            self.properties["Ez"] = Constant((0.0,1.0,0.0))
-            self.properties["E1"] = Constant((0.0,0.0,1.0))
-            self.properties["E2"] = Constant((1.0,0.0,0.0))
+            properties["Ez"] = Constant((0.0,1.0,0.0))
+            properties["E1"] = Constant((0.0,0.0,1.0))
+            properties["E2"] = Constant((1.0,0.0,0.0))
         else:
-            self.properties["Ez"] = Constant((0.0,0.0,1.0))
-            self.properties["E1"] = Constant((1.0,0.0,0.0))
-            self.properties["E2"] = Constant((0.0,1.0,0.0))
-
+            properties["Ez"] = Constant((0.0,0.0,1.0))
+            properties["E1"] = Constant((1.0,0.0,0.0))
+            properties["E2"] = Constant((0.0,1.0,0.0))
         
+        p = default_properties.copy()
+        p.update(properties)
+
+        self.orientation = orientation
+
+        ProblemDescription.__init__(self,mesh,p)
+
     def Declare_Spaces(self):
         V = VectorFunctionSpace(self.mesh,"CG",1)
         S = FunctionSpace(self.mesh,"CG",1)
@@ -38,4 +57,100 @@ class MultiphysicsProblem(ProblemDescription):
                 'wv':Function(self.spaces['W'])}
 
     def Build_Forms(self):
-        return {}
+        # Set up the functions, trials, and tests.
+        W = self.spaces['W']
+        wx = self.fields['wx']
+        wv = self.fields['wv']
+        
+        vq,vh1,vh2,T,Vol = split(wv)
+        q,h1,h2,Tnull,Vnull = split(wx)
+
+        tw = TestFunction(W)
+        tvq,tvh1,tvh2, tT, tVol = split(tw)
+        Delw = TrialFunction(W)
+
+        dvdtW = TrialFunction(W)
+        dvqdt,dvh1dt,dvh2dt, dTdt, dVdtNull = split(dvdtW)
+
+        # Fetch the material properties
+        PROP = self.properties
+        mu       = PROP['mu']
+        lmbda    = PROP['lambda']
+        mu_alpha = PROP['mu_alpha']
+        rho      = PROP['rho']
+        T_cp     = PROP['T_cp']
+        T_k      = PROP['T_k']
+
+        em_B     = PROP['em_B']
+        em_sig   = PROP['em_sig']
+
+        radius   = PROP['radius']
+        
+        orientation = self.orientation
+        I = Identity(W.cell().geometric_dimension())
+
+        # Perform the cross section integration
+        FTot = None
+        Mass = None
+        GPS2D = CircCart2D[4]
+        J0 = radius*radius/4.0
+        for z1,z2,weight in GPS2D:
+            # The fields at these points
+            # TODO: what if I get rid of Constant?
+            u = q + z1*h1 + z2*h2
+            v = vq + z1*vh1 + z2*vh2
+            dvdt = dvqdt + z1*dvh1dt + z2*dvh2dt
+
+            # Take the Gauteax derivatives to get test fields
+            tu = derivative(u,wx,tw)
+            tv = derivative(v,wv,tw)
+
+            # Mechanical strain energy
+            F = I + outer(u.dx(orientation),Ez) + outer(g1,E1) + outer(g2, E2 )
+            C = F.T*F
+            Ic = tr(C)
+            J = det(F)
+            mu_pt = mu+mu_alpha*T
+            Psi = ((mu_pt/2)*(Ic - 3) - mu_pt*ln(J) + (lmbda/2)*(ln(J))**2)
+            
+            # Take the Gateaux derivative of the strain energy to get internal force
+            FInt = derivative(-Psi,wx,tw)
+
+            # Thermal Form
+            Gradv = outer(v.dx(orientation),Ez) + outer(vg1,E1) + outer(vg2,E2)
+            S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
+            T_FLoc = -(dT.dx(orientation) * thermalcond * T.dx(orientation)) + dT*1.0
+
+            # Electrical Potential
+            V_FLoc = -inner(tVol.dx(orientation), em_sig*Vol.dx(orientation)) \
+              - inner(tVol.dx(orientation)*Ez,em_sig*(F.T*cross(v,em_B)))
+            # Current force
+            em_I = em_sig*Vol.dx(0)
+            ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
+            FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-1.0e-1*v)
+            
+            # Finalize
+            FLoc = weight*J0*( FInt + FExt + T_FLoc + V_FLoc )*dx
+            FTot = FLoc if FLoc is None else FTot + FLoc
+            Mass += weight*J0*(inner(tv,rho*dvdt)+inner(tT,rho*cp*dTdt))*dx
+            
+        # Contact forms
+        xr = X0 + q
+        dist = sqrt(dot(jump(xr),jump(xr)))
+        overlap = (2.0*Constant(radius)-dist)
+        ContactForm = -dot(jump(tvq),
+                        conditional(ge(overlap,0.0), -40.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+
+        
+        # Take the Gateax derivatives of everything
+        FTot += ContactForm
+        AX = derivative(FTot,wx,Delw)
+        AV = derivative(FTot,wv,Delw)
+        
+        # Dictionize and return
+        return {
+            'F' : Form(FTot),
+            'AX': Form(AX),
+            'AV': Form(AV),
+            'M' : Form(Mass)
+            }
