@@ -28,7 +28,7 @@ class Warp():
             self.Vmdof = MultiMeshDofMap()
             self.Vmmfs = MultiMeshFunctionSpace()
         for i,pts in enumerate(endpts):
-            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 20)
+            me = ProximityTree.create_line(np.array(pts[0]), np.array(pts[1]), 40)
             E = np.array(pts[1])- np.array(pts[0])
             if E[1]==0.0 and E[2]==0.0:
                 orientation=0

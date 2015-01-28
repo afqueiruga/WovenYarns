@@ -154,9 +154,9 @@ class Fibril():
             T = self.T
             Vol = self.Vol
 
-        g1 = project(self.radius*self.E1+h1,self.V)
+        g1 = project(self.radius*self.E1+self.radius*h1,self.V)
         g1.rename("g1","field")
-        g2 = project(self.radius*self.E2+h2,self.V)
+        g2 = project(self.radius*self.E2+self.radius*h2,self.V)
         g2.rename("g2","field")
 
         hullmesh = Mesh()

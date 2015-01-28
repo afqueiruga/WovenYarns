@@ -22,7 +22,7 @@ endpts = [ [ [-10.0, 0.0,-0.149],  [10.0, 0.0, -0.149] ],
 warp = Warp(endpts,monolithic=False,cutoff=1.5)
 
 Delw = MultiMeshFunction(warp.mmfs)
-
+embed()
 maxiter = 10
 tol = 1.0e-12
 Nsteps = 64
