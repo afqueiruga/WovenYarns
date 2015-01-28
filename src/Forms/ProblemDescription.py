@@ -18,7 +18,7 @@ class ProblemDescription():
             self.spaces["R"] = FunctionSpace(self.mesh,"Real",0)
         self.properties = {}
         for name,val in properties.iteritems():
-            if val is Function:
+            if isinstance(val, Coefficient):
                 self.properties[name] = val
             else:
                 self.properties[name] = Function(self.spaces['R'])
