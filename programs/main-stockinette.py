@@ -40,15 +40,15 @@ def initialize():
     for i,fib in enumerate(warp.fibrils):
         fib.wx.interpolate(Expression((
 
-        "x[0]*sq + o*sin(x[0]*p)",
-"A1*cos((x[0]*p)/2.)",
-"A2*cos(x[0]*p)",
-"(-4*o*pow(p,2)*R*sin(x[0]*p))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2) + 16*(pow(A2,2)*pow(cos(x[0]*p),2) + pow(o,2)*pow(sin(x[0]*p),2))))",
-"R*(-1 - (A1*pow(p,2)*cos((x[0]*p)/2.))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2) + 16*(pow(A2,2)*pow(cos(x[0]*p),2) + pow(o,2)*pow(sin(x[0]*p),2)))))",
-"(-4*A2*pow(p,2)*R*cos(x[0]*p))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2) + 16*(pow(A2,2)*pow(cos(x[0]*p),2) + pow(o,2)*pow(sin(x[0]*p),2))))",
-"(-2*A1*A2*pow(p,3)*R*pow(sin((x[0]*p)/2.),3))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2)*pow(1 + 2*o*p + sq - o*p*cos(x[0]*p),2) + 16*pow(A2,2)*pow(o*p + (1 + sq)*cos(x[0]*p),2) + 4*pow(A1,2)*pow(A2,2)*pow(p,2)*pow(sin((x[0]*p)/2.),6)))",
-"(4*A2*pow(p,2)*R*(o*p + (1 + sq)*cos(x[0]*p)))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2)*pow(1 + 2*o*p + sq - o*p*cos(x[0]*p),2) + 16*pow(A2,2)*pow(o*p + (1 + sq)*cos(x[0]*p),2) + 4*pow(A1,2)*pow(A2,2)*pow(p,2)*pow(sin((x[0]*p)/2.),6)))",
-"R*(-1 + (A1*pow(p,2)*cos((x[0]*p)/2.)*(-1 - 2*o*p - sq + o*p*cos(x[0]*p)))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2)*pow(1 + 2*o*p + sq - o*p*cos(x[0]*p),2) + 16*pow(A2,2)*pow(o*p + (1 + sq)*cos(x[0]*p),2) + 4*pow(A1,2)*pow(A2,2)*pow(p,2)*pow(sin((x[0]*p)/2.),6))))",
+            "x[0]*sq + o*sin(x[0]*p)",
+            "A1*cos((x[0]*p)/2.)",
+            "A2*cos(x[0]*p)",
+            "(-4*o*pow(p,2)*R*sin(x[0]*p))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2) + 16*(pow(A2,2)*pow(cos(x[0]*p),2) + pow(o,2)*pow(sin(x[0]*p),2))))",
+            "R*(-1 - (A1*pow(p,2)*cos((x[0]*p)/2.))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2) + 16*(pow(A2,2)*pow(cos(x[0]*p),2) + pow(o,2)*pow(sin(x[0]*p),2)))))",
+            "(-4*A2*pow(p,2)*R*cos(x[0]*p))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2) + 16*(pow(A2,2)*pow(cos(x[0]*p),2) + pow(o,2)*pow(sin(x[0]*p),2))))",
+            "(-2*A1*A2*pow(p,3)*R*pow(sin((x[0]*p)/2.),3))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2)*pow(1 + 2*o*p + sq - o*p*cos(x[0]*p),2) + 16*pow(A2,2)*pow(o*p + (1 + sq)*cos(x[0]*p),2) + 4*pow(A1,2)*pow(A2,2)*pow(p,2)*pow(sin((x[0]*p)/2.),6)))",
+            "(4*A2*pow(p,2)*R*(o*p + (1 + sq)*cos(x[0]*p)))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2)*pow(1 + 2*o*p + sq - o*p*cos(x[0]*p),2) + 16*pow(A2,2)*pow(o*p + (1 + sq)*cos(x[0]*p),2) + 4*pow(A1,2)*pow(A2,2)*pow(p,2)*pow(sin((x[0]*p)/2.),6)))",
+            "R*(-1 + (A1*pow(p,2)*cos((x[0]*p)/2.)*(-1 - 2*o*p - sq + o*p*cos(x[0]*p)))/sqrt(pow(p,4)*(pow(A1,2)*pow(cos((x[0]*p)/2.),2)*pow(1 + 2*o*p + sq - o*p*cos(x[0]*p),2) + 16*pow(A2,2)*pow(o*p + (1 + sq)*cos(x[0]*p),2) + 4*pow(A1,2)*pow(A2,2)*pow(p,2)*pow(sin((x[0]*p)/2.),6))))",
 
                                         "0.0", "0.0"),
                                         R = 1.0,#warp.fibrils[0].radius,
@@ -91,7 +91,7 @@ dirk = DIRK_Monolithic(1, h, warp, warp.assemble_system, warp.update, apply_BCs)
 for t in xrange(NT):
     dirk.march()
 
-    warp.output_states("post/stockinettemesh_time_{0}_"+str(t+2)+".pvd",1)
+    warp.output_states("post/stockinette_time_{0}_"+str(t+2)+".pvd",1)
     warp.output_surfaces("post/stockinettemesh_time_{0}_"+str(t+2)+".pvd",1)
 
 embed()
