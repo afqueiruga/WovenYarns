@@ -4,13 +4,14 @@ from QuadraturePoints import RectOuterProd,CircCart2D
 class MultiphysicsProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
     def Declare_Spaces(self):
-        V = VectorFunctionSpace(mesh,"CG",1)
-        S = FunctionSpace(mesh,"CG",1)
-        return ProblemDescription.Declare_Spaces().update({
+        V = VectorFunctionSpace(self.mesh,"CG",1)
+        S = FunctionSpace(self.mesh,"CG",1)
+        d = {
             'S': S,
             'V': V,
-            'W': MixedFunctionSpace([self.V,self.V,self.V,self.S,self.S])
-        })
+            'W': MixedFunctionSpace([V,V,V,S,S])
+        }
+        return d
 
     def Declare_Fields(self):
         return {}

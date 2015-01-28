@@ -14,7 +14,8 @@ class ProblemDescription():
         """
         self.mesh = mesh
         self.spaces = self.Declare_Spaces()
-
+        if not self.spaces.has_key("R"):
+            self.spaces["R"] = FunctionSpace(self.mesh,"Real",0)
         self.properties = {}
         for name,val in properties.iteritems():
             if val is Function:
