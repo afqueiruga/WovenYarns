@@ -6,13 +6,14 @@ nu = 0.0
 default_properties = {
     'mu':E/(2*(1 + nu)),
     'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
-    'mu_alpha':-0.03,
+    'mu_alpha':-0.0,
     'rho': 1.0,
     'T_cp':1.0,
     'T_k': 1.0,
     'em_B':Constant((0.0,0.0,0.0)),
     'em_sig':10.0,
-    'radius':0.15
+    'radius':0.15,
+    'f_dens_ext':Constant((0.0,0.0,0.0))
 }
 class MultiphysicsProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
@@ -92,6 +93,8 @@ class MultiphysicsProblem(ProblemDescription):
         em_sig   = PROP['em_sig']
 
         radius   = PROP['radius']
+
+        f_dens_ext = PROP['f_dens_ext']
         
         orientation = self.orientation
         Ez = PROP['Ez']
@@ -109,9 +112,9 @@ class MultiphysicsProblem(ProblemDescription):
         for z1,z2,weight in GPS2D:
             # The fields at these points
             # TODO: what if I get rid of Constant?
-            u = q + Constant(z1)*h1 + Constant(z2)*h2
-            v = vq + Constant(z1)*vh1 + Constant(z2)*vh2
-            dvdt = dvqdt + Constant(z1)*dvh1dt + Constant(z2)*dvh2dt
+            u = q + radius*Constant(z1)*h1 + radius*Constant(z2)*h2
+            v = vq + radius*Constant(z1)*vh1 + radius*Constant(z2)*vh2
+            dvdt = dvqdt + radius*Constant(z1)*dvh1dt + radius*Constant(z2)*dvh2dt
 
             # Take the Gauteax derivatives to get test fields
             tu = derivative(u,wx,tw)
@@ -139,7 +142,8 @@ class MultiphysicsProblem(ProblemDescription):
             # Current force
             em_I = em_sig*Vol.dx(0)
             ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
-            FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-1.0e-1*v)
+            
+            FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-1.0e-1*v) + inner(tv, f_dens_ext)
             
             # Finalize
             FLoc = weight*J0*( FInt + FExt + T_FLoc + V_FLoc )*dx

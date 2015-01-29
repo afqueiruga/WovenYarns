@@ -44,7 +44,7 @@ class ProblemDescription():
         return self.fields
     
     def WriteFile(self,fname,i=0):
-        from multiwriter.multiwriter import VTKAppender
+        from ..multiwriter.multiwriter import VTKAppender
         vfile = VTKAppender(fname,"ascii")
         
         f4io = self.split_for_io()
