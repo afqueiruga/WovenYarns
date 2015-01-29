@@ -31,7 +31,6 @@ def MultiphysicsForm(W,V,S,wx,wv,X0, orientation=0,radius=1.0):
     # em_I = Constant(1.0/Height/Width)
     em_sig = Constant(10.0)
 
-    print orientation
     if orientation == 0:
         Ez,E1,E2 = \
         Constant((1.0,0.0,0.0)),Constant((0.0,1.0,0.0)),Constant((0.0,0.0,1.0))
