@@ -39,3 +39,16 @@ class ProblemDescription():
     def Build_Forms(self):
         " Build the variational problem "
         return {}
+    
+    def split_for_io(self):
+        return self.fields
+    
+    def WriteFile(self,fname,i=0):
+        from multiwriter.multiwriter import VTKAppender
+        vfile = VTKAppender(fname,"ascii")
+        
+        f4io = self.split_for_io()
+        for name,field in f4io.iteritems():
+            field.rename(name,"field")
+        
+        vfile.write(i,f4io.values(), [])

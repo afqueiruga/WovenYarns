@@ -4,7 +4,6 @@ from QuadraturePoints import RectOuterProd,CircCart2D
 E = 1.0
 nu = 0.0
 default_properties = {
-    'E':E, 'nu':nu,
     'mu':E/(2*(1 + nu)),
     'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
     'mu_alpha':-0.03,
@@ -49,7 +48,7 @@ class MultiphysicsProblem(ProblemDescription):
             
         if buildform:
             self.Build_Forms()
-        
+
     def Declare_Spaces(self):
         V = VectorFunctionSpace(self.mesh,"CG",1)
         S = FunctionSpace(self.mesh,"CG",1)
@@ -156,7 +155,7 @@ class MultiphysicsProblem(ProblemDescription):
                         conditional(ge(overlap,0.0), -40.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
         
-        # Take the Gateax derivatives of everything
+        # Take the functional derivatives of everything
         FTot += ContactForm
         AX = derivative(FTot,wx,Delw)
         AV = derivative(FTot,wv,Delw)
@@ -167,4 +166,19 @@ class MultiphysicsProblem(ProblemDescription):
             'AX': Form(AX),
             'AV': Form(AV),
             'M' : Form(Mass)
+            }
+
+    def split_for_io(self):
+        q,h1,h2, Tnull, Vnull    = self.fields['wx'].split()
+        vq,vh1,vh2,T,Vol = self.fields['wv'].split()
+        
+        g1 = project(self.properties['radius']*self.properties['E1']+h1,
+                     self.spaces['V'])
+        g2 = project(self.properties['radius']*self.properties['E2']+h2,
+                     self.spaces['V'])     
+        return {
+                'q':q, 'h1':h1, 'h2':h2,
+                'vq':vq, 'vh1':vh1, 'vh2':vh2,
+                'g1':g1, 'g2':g2,
+                'T':T, 'V':Vol
             }

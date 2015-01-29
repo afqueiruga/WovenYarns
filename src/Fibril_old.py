@@ -8,7 +8,7 @@ from Forms import BeamForm, ThermalForm, MultiphysicsForm, IterativeForm
 This is a base class for the director-based Fibril
 
 """
-from IPython import embed
+
 class Fibril():
     def __init__(self,mesh,orientation=0, monolithic=True, radius=0.075, wx=None,wv=None):
         """
