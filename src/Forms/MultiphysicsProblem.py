@@ -47,7 +47,7 @@ class MultiphysicsProblem(ProblemDescription):
             self.properties["X0"] = X0
             
         if buildform:
-            self.Build_Forms()
+            self.forms = self.Build_Forms()
 
     def Declare_Spaces(self):
         V = VectorFunctionSpace(self.mesh,"CG",1)

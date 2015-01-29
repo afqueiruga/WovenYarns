@@ -24,6 +24,7 @@ class Fibril():
 
     def WriteFile(self,fname,i=0):
         self.problem.WriteFile(fname,i)
+        
     def WriteSurface(self,fname,i=0,NT=16):
         fields = self.problem.split_for_io()
 
