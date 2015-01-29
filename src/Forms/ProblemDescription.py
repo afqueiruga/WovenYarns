@@ -6,7 +6,7 @@ class ProblemDescription():
     a collection FunctionSpaces and FEniCS form, enumerating
     inputs, outputs, etc.
     """
-    def __init__(self, mesh, properties):
+    def __init__(self, mesh, properties, buildform = True):
         """"
         Properties should be a dictionary of double values or of FEM
         spaces on the mesh. If the properties is a constant, it will
@@ -25,7 +25,8 @@ class ProblemDescription():
                 self.properties[name].interpolate(Constant(val))
 
         self.fields = self.Declare_Fields()
-        self.forms  = self.Build_Forms()
+        if buildform:
+            self.forms = self.Build_Forms()
 
     def Declare_Spaces(self):
         " Tabulate all function spaces used. By default need the space of real "

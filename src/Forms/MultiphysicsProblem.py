@@ -17,7 +17,7 @@ default_properties = {
 }
 class MultiphysicsProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
-    def __init__(self,mesh,properties,orientation=0):
+    def __init__(self,mesh,properties, buildform=True, orientation=0):
         if properties.has_key("orientation"):
             orientation = properties["orientation"]
             properties.pop("orientation",None)
@@ -40,8 +40,16 @@ class MultiphysicsProblem(ProblemDescription):
 
         self.orientation = orientation
 
-        ProblemDescription.__init__(self,mesh,p)
-
+        ProblemDescription.__init__(self,mesh,p,False)
+        
+        if not properties.has_key("X0"):
+            X0 = Function(self.spaces['V'])
+            X0.interpolate(Expression(("x[0]","x[1]","x[2]")))
+            self.properties["X0"] = X0
+            
+        if buildform:
+            self.Build_Forms()
+        
     def Declare_Spaces(self):
         V = VectorFunctionSpace(self.mesh,"CG",1)
         S = FunctionSpace(self.mesh,"CG",1)
@@ -87,6 +95,11 @@ class MultiphysicsProblem(ProblemDescription):
         radius   = PROP['radius']
         
         orientation = self.orientation
+        Ez = PROP['Ez']
+        E1 = PROP['E1']
+        E2 = PROP['E2']
+
+        X0 = PROP['X0']
         I = Identity(W.cell().geometric_dimension())
 
         # Perform the cross section integration
@@ -97,16 +110,16 @@ class MultiphysicsProblem(ProblemDescription):
         for z1,z2,weight in GPS2D:
             # The fields at these points
             # TODO: what if I get rid of Constant?
-            u = q + z1*h1 + z2*h2
-            v = vq + z1*vh1 + z2*vh2
-            dvdt = dvqdt + z1*dvh1dt + z2*dvh2dt
+            u = q + Constant(z1)*h1 + Constant(z2)*h2
+            v = vq + Constant(z1)*vh1 + Constant(z2)*vh2
+            dvdt = dvqdt + Constant(z1)*dvh1dt + Constant(z2)*dvh2dt
 
             # Take the Gauteax derivatives to get test fields
             tu = derivative(u,wx,tw)
             tv = derivative(v,wv,tw)
 
             # Mechanical strain energy
-            F = I + outer(u.dx(orientation),Ez) + outer(g1,E1) + outer(g2, E2 )
+            F = I + outer(u.dx(orientation),Ez) + outer(h1,E1) + outer(h2, E2 )
             C = F.T*F
             Ic = tr(C)
             J = det(F)
@@ -117,9 +130,9 @@ class MultiphysicsProblem(ProblemDescription):
             FInt = derivative(-Psi,wx,tw)
 
             # Thermal Form
-            Gradv = outer(v.dx(orientation),Ez) + outer(vg1,E1) + outer(vg2,E2)
+            Gradv = outer(v.dx(orientation),Ez) + outer(vh1,E1) + outer(vh2,E2)
             S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
-            T_FLoc = -(dT.dx(orientation) * thermalcond * T.dx(orientation)) + dT*1.0
+            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*1.0
 
             # Electrical Potential
             V_FLoc = -inner(tVol.dx(orientation), em_sig*Vol.dx(orientation)) \
@@ -131,8 +144,9 @@ class MultiphysicsProblem(ProblemDescription):
             
             # Finalize
             FLoc = weight*J0*( FInt + FExt + T_FLoc + V_FLoc )*dx
-            FTot = FLoc if FLoc is None else FTot + FLoc
-            Mass += weight*J0*(inner(tv,rho*dvdt)+inner(tT,rho*cp*dTdt))*dx
+            MLoc = weight*J0*(inner(tv,rho*dvdt)+inner(tT,rho*T_cp*dTdt))*dx
+            FTot = FLoc if FTot is None else FTot + FLoc
+            Mass = MLoc if Mass is None else Mass + MLoc
             
         # Contact forms
         xr = X0 + q
