@@ -44,7 +44,7 @@ class Fibril():
             cent = qN[:,ix]+coords[ix]
             g1c = g1N[:,ix]
             g2c = g2N[:,ix]
-            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT-1)):
+            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)):
                 edit.add_vertex(NT*ix+jt,
                                 np.array(cent+np.cos(theta)*g1c+np.sin(theta)*g2c,
                                          dtype=np.float_))
@@ -54,8 +54,8 @@ class Fibril():
             for jt in xrange(NT-1):
                 edit.add_cell(2*NT*(ix-1)+2*jt,   NT*ix+jt+1   , NT*(ix-1)+jt, NT*(ix-1)+jt+1)
                 edit.add_cell(2*NT*(ix-1)+2*jt+1, NT*ix+jt+1   , NT*ix    +jt, NT*(ix-1)+jt)
-            edit.add_cell(2*NT*(ix-1)+2*NT,       NT*ix+0   ,    NT*(ix-1)+NT-1, NT*(ix-1)+0)
-            edit.add_cell(2*NT*(ix-1)+2*NT+1,     NT*ix+0   ,    NT*ix    +NT-1, NT*(ix-1)+NT-1)
+            edit.add_cell(2*NT*(ix-1)+2*NT-2,       NT*ix+0   ,    NT*(ix-1)+NT-1, NT*(ix-1)+0)
+            edit.add_cell(2*NT*(ix-1)+2*NT-1,     NT*ix+0   ,    NT*ix    +NT-1, NT*(ix-1)+NT-1)
 
         edit.close()
         
