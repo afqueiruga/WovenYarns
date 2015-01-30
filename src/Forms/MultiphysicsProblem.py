@@ -17,7 +17,7 @@ default_properties = {
 }
 class MultiphysicsProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
-    def __init__(self,mesh,properties, buildform=True, orientation=0):
+    def __init__(self,mesh,properties, buildform=True, orientation=0, order=(1,1)):
         if properties.has_key("orientation"):
             orientation = properties["orientation"]
             properties.pop("orientation",None)
@@ -39,7 +39,8 @@ class MultiphysicsProblem(ProblemDescription):
         p.update(properties)
 
         self.orientation = orientation
-
+        self.order = order
+        
         ProblemDescription.__init__(self,mesh,p,False)
         
         if not properties.has_key("X0"):
@@ -51,8 +52,8 @@ class MultiphysicsProblem(ProblemDescription):
             self.forms = self.Build_Forms()
 
     def Declare_Spaces(self):
-        V = VectorFunctionSpace(self.mesh,"CG",1)
-        S = FunctionSpace(self.mesh,"CG",1)
+        V = VectorFunctionSpace(self.mesh,"CG",self.order[0])
+        S = FunctionSpace(self.mesh,"CG",self.order[1])
         d = {
             'S': S,
             'V': V,
@@ -108,7 +109,7 @@ class MultiphysicsProblem(ProblemDescription):
         FTot = None
         Mass = None
         GPS2D = CircCart2D[4]
-        J0 = radius*radius/4.0
+        J0 = radius*radius
         for z1,z2,weight in GPS2D:
             # The fields at these points
             # TODO: what if I get rid of Constant?
