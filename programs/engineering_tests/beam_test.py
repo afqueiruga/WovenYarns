@@ -31,7 +31,7 @@ bound = CompiledSubDomain("on_boundary")
 
 def solveit(Nelem,p):
     fib = Fibril.Fibril([ [0.0,0.0,0.0],[L,0.0,0.0]], Nelem, props,
-                    MultiphysicsProblem)
+                    MultiphysicsProblem,order=(p,1))
 
     bcall = DirichletBC(fib.problem.spaces['W'], zero, bound)
 
@@ -51,13 +51,15 @@ def solveit(Nelem,p):
     fib.problem.fields['wx'].eval(weval,np.array([L/2.0,0.0,0.0]))
     return weval[1]
 
-Nelems = [10,100,200,300,400,600,800,1000,10000]
-points = map(lambda x:solveit(x,1),Nelems)
+Nelems = [10,100,200,300,400,600,800,1000]
+ps = [ 1,2,3, 4]
+for p in ps:
+    points = map(lambda x:solveit(x,p),Nelems)
+    plt.loglog([10.0/x for x in Nelems],[np.abs( (y - truesol)/truesol) for y in points])
 
-plt.axhline(truesol)
-plt.plot(Nelems,points)
-plt.figure()
-plt.loglog([10.0/x for x in Nelems],[np.abs( (y - truesol)/truesol) for y in points])
+# plt.axhline(truesol)
+# plt.plot(Nelems,points)
+# plt.figure()
 plt.show()
 
 

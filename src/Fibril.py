@@ -5,7 +5,7 @@ from ProximityTree import create_line
 
 class Fibril():
     """ This is a fibril that relies on Problems """
-    def __init__(self, pts, Nelem, properties, Prob):
+    def __init__(self, pts, Nelem, properties, Prob, order=(1,1)):
         me = create_line(np.array(pts[0]), np.array(pts[1]), Nelem)
         self.mesh = me
         
@@ -20,7 +20,7 @@ class Fibril():
             print "Error: Fibrils must be axis aligned! But I'm not going to stop."
             orientation=0
         
-        self.problem = Prob(self.mesh,properties, orientation = orientation)
+        self.problem = Prob(self.mesh,properties, orientation = orientation, order=order)
 
     def WriteFile(self,fname,i=0):
         self.problem.WriteFile(fname,i)
