@@ -62,6 +62,8 @@ class MultiphysicsProblem(ProblemDescription):
         return d
 
     def Declare_Fields(self):
+        self.space_key = {'wx':'W',
+                'wv':'W'}
         return {'wx':Function(self.spaces['W']),
                 'wv':Function(self.spaces['W'])}
 

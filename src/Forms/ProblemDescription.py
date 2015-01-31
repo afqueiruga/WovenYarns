@@ -24,6 +24,7 @@ class ProblemDescription():
                 self.properties[name] = Function(self.spaces['R'])
                 self.properties[name].interpolate(Constant(val))
 
+        self.space_key = {}
         self.fields = self.Declare_Fields()
         if buildform:
             self.forms = self.Build_Forms()

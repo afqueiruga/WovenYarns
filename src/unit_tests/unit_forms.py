@@ -5,8 +5,8 @@ Just build some forms and make sure they compile.
 from dolfin import *
 import numpy as np
 
-from ProximityTree import create_line
-from Forms import MultiphysicsProblem
+from src.ProximityTree import create_line
+from src.Forms import MultiphysicsProblem
 
 me = create_line(np.array([0.0,0.0,0.0]),np.array([1.0,0.0,0.0]), 10)
 
@@ -18,4 +18,4 @@ if mp.properties['mu'].vector()[0] != 10.0:
 
 print mp.split_for_io()
 
-mp.WriteFile("unit_tests/unit_form_test.pvd")
+mp.WriteFile("src/unit_tests/unit_form_test.pvd")
