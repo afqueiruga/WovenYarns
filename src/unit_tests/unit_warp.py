@@ -22,7 +22,19 @@ warp.output_states("src/unit_tests/warp_{0}_.pvd",0)
 warp.output_surfaces("src/unit_tests/warp_mesh_{0}_.pvd",0)
 
 warp.create_contacts()
+
 M = warp.assemble_form('AX','W')
 from matplotlib import pylab as plt
 plt.spy(M.array())
+plt.show()
+
+M,AX,AV = warp.assemble_forms(['M','AX','AV'],'W')
+plt.spy(M.array())
+plt.figure()
+plt.spy(AX.array())
+plt.figure()
+plt.spy(AV.array())
+plt.show()
+
+plt.spy(warp.mcache['AX'].array())
 plt.show()

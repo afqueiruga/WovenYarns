@@ -42,6 +42,7 @@ class Warp():
             self.fields[name] = MultiMeshFunction(self.spaces[ self.fibrils[0].problem.space_key[name] ] )
 
         self.contacts = []
+        self.mcache = {}
 
     def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
@@ -117,4 +118,12 @@ class Warp():
                                      cp.chi_n_max)
         A.apply('add')
 
+        self.mcache[form_key] = A
+
         return A
+
+    def assemble_forms(self,keys,spaces):
+        if spaces is not list:
+            spaces = [ spaces for x in keys ]
+        r =  [self.assemble_form(f,s) for f,s in zip(keys,spaces)]
+        return r
