@@ -1,0 +1,12 @@
+*~
+#*#
+
+*.pyc
+*.o
+*.so
+
+*.vtu
+*.vtk
+*.pvd
+
+.DS_Store
