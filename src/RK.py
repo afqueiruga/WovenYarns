@@ -1,10 +1,10 @@
 import numpy as np
 
 class RK():
-    def __init__(self,h, tableau, sys,update,bcapp, x,v):
+    def __init__(self,h, tableau, sys,update,bcapp, x,v, M):
         self.h = h
         
-        self.sysass = sysass
+        self.sys = sys
         self.update = update
         self.bcapp = bcapp
 
@@ -19,6 +19,8 @@ class RK():
         self.V0 = v.copy()
         self.Xhat = x.copy()
         self.DX = x.copy()
+
+        self.M = M
         
     def march(self,time=0.0):
         pass

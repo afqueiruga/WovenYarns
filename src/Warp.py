@@ -80,7 +80,7 @@ class Warp():
             cp.make_table()
             self.contacts.append(cp)
 
-    
+    # TODO: Build a table of forms -> spaces?
     def assemble_form(self, form_key, space_key):
         from BroadcastAssembler import BroadcastAssembler
         rank = self.fibrils[0].problem.forms[form_key].rank()

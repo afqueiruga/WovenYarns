@@ -19,10 +19,10 @@ LDIRK = {
         'c':np.array([ 1.0 ], dtype=np.double)
     },
     2 : {
-        'a':RK_a = np.array([ [RK_alpha, 0.0],
-                                [1.0-RK_alpha, RK_alpha] ], dtype=np.double),
-        'b':np.array([ RK_alpha, 1.0 ], dtype=np.double),
-        'c':np.array([ RK_alpha, 1.0 ], dtype=np.double)
+        'a':np.array([ [alpha_2, 0.0],
+                       [1.0-alpha_2, alpha_2] ], dtype=np.double),
+        'b':np.array([ alpha_2, 1.0 ], dtype=np.double),
+        'c':np.array([ alpha_2, 1.0 ], dtype=np.double)
     },
     3 : {
         'a': np.array([ [ alpha, 0.0, 0.0 ],
@@ -45,26 +45,27 @@ class DIRK_Monolithic(RK):
         RK_a = self.RK_a
         RK_b = self.RK_b
         RK_c = self.RK_c
+        M = self.M
         
-        V0.vector()[:] = v.vector()[:]
-        X0.vector()[:] = x.vector()[:]
+        V0[:] = v[:]
+        X0[:] = x[:]
         ks = []
         vs = []
-        for i in xrange(len(RK_b)):
-            print " Stage ",i," at ",RK_b[i]," with aii=",RK_a[i,i]
+        for i in xrange(len(RK_c)):
+            print " Stage ",i," at ",RK_c[i]," with aii=",RK_a[i,i]
             eps = 1.0
             tol = 1.0e-10
             maxiter = 10
             itcnt = 0
             Rhat = M*V0[:]
             Xhat[:] = X0[:]
-            aii = RK_a[i,i]
+            aii = float(RK_a[i,i])
             for j in xrange(i):
-                Rhat[:] += h*RK_a[i,j]*KS[j][:]
-                Xhat[:] += h*RK_a[i,j]*VS[j][:]
+                Rhat[:] += h*RK_a[i,j]*ks[j][:]
+                Xhat[:] += h*RK_a[i,j]*vs[j][:]
             while eps>tol and itcnt < maxiter:
                 print "  Assembling..."
-                F,AX,AV = self.sysass(time)
+                F,AX,AV = self.sys(time)
                 K = M - h*h*aii*aii*AX - h*aii*AV
                 R = Rhat - M*v + h*aii*F
                 self.bcapp(K,R,time+h*RK_c[i],itcnt!=0)
@@ -78,5 +79,5 @@ class DIRK_Monolithic(RK):
                 self.update()
                 itcnt += 1
             ks.append(R)
-            vs.append(v.copy()) # TODO: Get rid of these
+            vs.append(v.copy()) # TODO: Get rid of this copy
 
