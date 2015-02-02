@@ -45,13 +45,76 @@ class Warp():
 
     def output_states(self,fname,i):
         for j,fib in enumerate(self.fibrils):
-            fib.write_file(fname.format(j),i)
+            fib.WriteFile(fname.format(j),i)
     def output_surfaces(self,fname,i):
         for j,fib in enumerate(self.fibrils):
-            fib.write_surface(fname.format(j),i)
+            fib.WriteSurface(fname.format(j),i)
     def output_contacts(self,fname):
         for j,c in enumerate(self.contacts):
             c.output_file(fname.format(self.fibril_pairs[j][0],self.fibril_pairs[j][1],"pairs"),
                           fname.format(self.fibril_pairs[j][0],self.fibril_pairs[j][1],"gamma") )
 
     
+    def create_contacts(self,pairs=None,cutoff=0.3):
+        """
+        Create all of the neccessary contact pairs.
+        If a list of pairs isn't specified, just create the n^2 list.
+        """
+
+        if not pairs:
+            pairs = [ (j,i) for j in xrange(len(self.fibrils)) for i in xrange(j+1,len(self.fibrils))  ]
+        for i,fib in enumerate(self.fibrils):
+            fib.current_mesh = Mesh(fib.mesh)
+            fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
+            
+        self.fibril_pairs = pairs
+        self.contacts = []
+        for i,p in enumerate(pairs):
+            cp = ContactPair(self.fibrils[p[0]].mesh,self.fibrils[p[0]].mesh,
+                             self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,10,cutoff)
+            cp.make_table()
+            self.contacts.append(cp)
+
+    
+    def assemble_form(self, form_key, space_key):
+        from BroadcastAssembler import BroadcastAssembler
+        rank = self.fibrils[0].problem.forms[form_key].rank()
+        mmdofmap = self.spaces[space_key].dofmap()
+        gN = mmdofmap.global_dimension()
+
+        if rank==1:
+            A = Vector()
+            dim = np.array([gN],dtype=np.intc)
+            local_dofs = np.array([0,gN],dtype=np.intc)
+        elif rank==2:
+            A = Matrix()
+            dim = np.array([gN,gN],dtype=np.intc)
+            local_dofs = np.array([0,gN,0,gN],dtype=np.intc)
+        else:
+            print "I don't do other ranks."
+
+        assem = BroadcastAssembler()
+        assem.init_global_tensor(A,dim,rank,0, local_dofs, mmdofmap.off_process_owner())
+
+        for i,fib in enumerate(self.fibrils):
+            assem.sparsity_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
+        for i,cp in enumerate(self.contacts):
+            assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
+                                     cp.meshA, mmdofmap.part(self.fibril_pairs[i][0]),
+                                     cp.meshB, mmdofmap.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened)
+        assem.sparsity_apply()
+        for i,fib in enumerate(self.fibrils):
+            assem.assemble_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
+
+        for i,cp in enumerate(self.contacts):
+            assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
+                                     cp.meshA, mmdofmap.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][1]].problem.forms[form_key], 
+                                     cp.meshB, mmdofmap.part(self.fibril_pairs[i][1]),
+                                     cp.pair_flattened,
+                                     cp.chi_X_table.flatten(),
+                                     cp.chi_n_max)
+        A.apply('add')
+
+        return A
