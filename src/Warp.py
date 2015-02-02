@@ -5,6 +5,8 @@ from Fibril import Fibril
 from ContactPair import ContactPair
 from ContactMultiMesh import ContactMultiMesh
 
+
+from IPython import embed
 class Warp():
     """
     Container class of a Fibril assembly. Doesn't neccessarily have to be a warp.
@@ -38,8 +40,10 @@ class Warp():
 
         # Build all of the fields on the multimeshspaces
         self.fields = {}
+        self.space_key = {}
         for name in self.fibrils[0].problem.fields:
             self.fields[name] = MultiMeshFunction(self.spaces[ self.fibrils[0].problem.space_key[name] ] )
+            self.space_key[name] = self.fibrils[0].problem.space_key[name]
 
         self.contacts = []
         self.mcache = {}
@@ -127,3 +131,9 @@ class Warp():
             spaces = [ spaces for x in keys ]
         r =  [self.assemble_form(f,s) for f,s in zip(keys,spaces)]
         return r
+
+    def update(self):
+        for key,f in self.fields.iteritems():
+            mdof = self.spaces[self.space_key[key]].dofmap()
+            for i,fib in enumerate(self.fibrils):
+                fib.problem.fields[key].vector()[:] = f.vector()[mdof.part(i).dofs()]
