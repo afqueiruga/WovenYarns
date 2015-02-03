@@ -10,3 +10,4 @@ from ThermalForm import ThermalForm
 
 
 from MultiphysicsProblem import MultiphysicsProblem
+from CurrentBeamProblem import CurrentBeamProblem
