@@ -1,7 +1,7 @@
 from ProblemDescription import *
 from QuadraturePoints import RectOuterProd,CircCart2D
 
-E = 1.0
+E = 10.0
 nu = 0.0
 default_properties = {
     'mu':E/(2*(1 + nu)),

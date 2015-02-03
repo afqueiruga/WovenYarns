@@ -78,6 +78,6 @@ class DIRK_Monolithic(RK):
                 x[:] = Xhat[:] + h*aii*v[:]
                 self.update()
                 itcnt += 1
-            ks.append(R)
+            ks.append(F)
             vs.append(v.copy()) # TODO: Get rid of this copy
 

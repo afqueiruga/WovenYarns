@@ -53,10 +53,10 @@ def initialize():
 
 
 
-probes = [ (np.array([0.0,0.0, 0.0],dtype=np.double),1,'x'),
-            (np.array([0.5,0.0, 0.0],dtype=np.double),2,'x'),
-            (np.array([0.5,0.0, 0.0],dtype=np.double),9,'v'),
-            (np.array([0.5,0.0, 0.0],dtype=np.double),10,'v')]
+probes = [ (np.array([0.0,0.0, 0.0],dtype=np.double),2,'x'),
+            (np.array([5.0,0.0, 0.0],dtype=np.double),1,'x'),
+            (np.array([5.0,0.0, 0.0],dtype=np.double),9,'v'),
+            (np.array([5.0,0.0, 0.0],dtype=np.double),10,'v')]
 weval = np.zeros(11)
 
 
@@ -72,7 +72,7 @@ def solve(order,NT):
 
     for t in xrange(NT):
         dirk.march()
-        warp.output_states("post/dirk_{0}_"+str(t)+".pvd",0)
+        # warp.output_states("post/dirk_{0}_"+str(t)+".pvd",0)
         for g,p in enumerate(probes):
             if p[2]=='x':
                 warp.fibrils[0].problem.fields['wx'].eval(weval,p[0])
@@ -83,9 +83,9 @@ def solve(order,NT):
     return (times,time_series,h,order)
 
 
-Tmax = 100.0
-NTS = [50]
-orders = [1]
+Tmax = 5.0
+NTS = [50,100,200]
+orders = [1,2,3]
 all_series = [ ]
 
 for order in orders:
@@ -119,3 +119,4 @@ def compute_convergence(all_series):
 
 make_plots(all_series)
 compute_convergence(all_series)
+plt.show()
