@@ -143,7 +143,7 @@ class MultiphysicsProblem(ProblemDescription):
             V_FLoc = -inner(tVol.dx(orientation), em_sig*Vol.dx(orientation)) \
               - inner(tVol.dx(orientation)*Ez,em_sig*(F.T*cross(v,em_B)))
             # Current force
-            em_I = em_sig*Vol.dx(0)
+            em_I = em_sig*Vol.dx(orientation)
             ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
             
             FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-1.0e-1*v) + inner(tv, f_dens_ext)

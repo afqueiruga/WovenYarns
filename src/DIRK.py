@@ -75,7 +75,7 @@ class DIRK_Monolithic(RK):
                 eps=np.linalg.norm(DX.array(), ord=np.Inf)
                 print "  ",itcnt," Norm:", eps
                 v[:] = v[:] + DX[:]
-                x = Xhat[:] + h*aii*v[:]
+                x[:] = Xhat[:] + h*aii*v[:]
                 self.update()
                 itcnt += 1
             ks.append(R)
