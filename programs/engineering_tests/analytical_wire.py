@@ -5,74 +5,92 @@ from matplotlib import pylab as plt
 from IPython import embed
 
 """
-Set up the warp with a single fibril
+Properties
 """
-endpts = [ [[-10.0,0.0,0.0],[10.0,0.0,0.0]] ,
-            ]
-defaults = { 'radius':0.2,
-             'em_B':Constant((0.0,1.0,0.0)) }
-props = [ { 'em_B':Constant((1.0,1.0,0.0))} ]
 
-warp = Warp(endpts, props, defaults, CurrentBeamProblem)
+Tmax = 10.0
+L = 1.0
+Delta = 0.9
+VBound = (L-Delta)/Tmax
+endpts = [ [-L,0.0,0.0],[L,0.0,0.0] ]
 
-
-
-"""
-Boundary conditions on the velocity updates
-"""
-zero = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
-bound = CompiledSubDomain("on_boundary")
-# subs = MultiMeshSubSpace(warp.spaces['W'],0)
-bcall = MultiMeshDirichletBC(warp.spaces['W'], zero, bound)
-def apply_BCs(K,R,t,hold=False):
-    bcall.apply(K,R)
-
-
-"""
-DIRK's assembling routine
-"""
-def sys(time):
-    return warp.assemble_forms(['F','AX','AV'],'W')
-
-
-"""
-Initialize routine
-"""
-def initialize():
-    for i,fib in enumerate(warp.fibrils):
-        fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0",
-                                       "0.0", "0.0")))
-        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0",
-                                       "0.0", "x[0]/100.0")))
-        mdof = warp.spaces['W'].dofmap()
-        warp.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
-        warp.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
+props =  { 'radius':0.02,
+           'em_B':Constant((0.01,0.01,0.0)) } 
+        
 
 
 def solveit(Nelem,p):
-    fib = Fibril.Fibril([ [0.0,0.0,0.0],[L,0.0,0.0]], Nelem, props,
-                    MultiphysicsProblem,order=(p,1))
-
-    bcall = DirichletBC(fib.problem.spaces['W'], zero, bound)
-
-    R = assemble(fib.problem.forms['F'])
-    K = assemble(fib.problem.forms['AX'])
-    K.ident_zeros()
-    bcall.apply(K,R)
-
-    DelW = Function(fib.problem.spaces['W'])
-    solve(K,DelW.vector(),R)
-    fib.problem.fields['wx'].vector()[:] -= DelW.vector()[:]
-
-    # fib.WriteFile("post/beam_test.pvd")
-    # fib.WriteSurface("post/beam_mesh_test.pvd")
+   
     
-    weval = np.zeros(11)
-    fib.problem.fields['wx'].eval(weval,np.array([L,0.0,0.0],dtype=np.double))
+    fib = Fibril.Fibril( endpts, Nelem, props,
+                        CurrentBeamProblem,order=(p,1))
+
+    """
+    Boundary conditions on the velocity updates
+    """
+    zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
+    velocity = Expression(("x[0]*V","0.0","0.0"),V=-VBound/L)
+    
+    bound = CompiledSubDomain("on_boundary")
+    bczero = DirichletBC(fib.problem.spaces['W'].sub(0), zero, bound)
+    bcmove = DirichletBC(fib.problem.spaces['W'].sub(0), velocity, bound)
+    fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",#"cos(x[0]*period)","sin(-x[0]*period)",
+                                       "0.0"," 0.0","0.0",
+                                       "0.0","0.0","0.0"),period=np.pi/10.0))
+    fib.problem.fields['wv'].interpolate(Expression(("x[0]*V","0.0","0.0",
+                                       "0.0"," 0.0","0.0",
+                                       "0.0","0.0","0.0"),V=-VBound/L))
+    """
+    DIRK's assembling routine
+    """
+    
+    
+    def sys(time):
+        R = assemble(fib.problem.forms['F'])
+        K = assemble(fib.problem.forms['AX'])
+        AV = assemble(fib.problem.forms['AV'])
+        return R,K,AV
+    def apply_BCs(K,R,time,hold):
+        bczero.apply(K,R)
+        # if hold:
+        #     bczero.apply(K,R)
+        # else:
+        #     bcmove.apply(K,R)
+
+    # Do a bit of dynamic relaxation first
+    NT = 50
+    h = Tmax/NT
+    dirk = DIRK_Monolithic(h,LDIRK[1], sys, lambda : None,apply_BCs,
+                       fib.problem.fields['wx'].vector(),fib.problem.fields['wv'].vector(),
+                       assemble(fib.problem.forms['M']))
+    for t in xrange(NT):
+        dirk.march()
+        fib.WriteFile("post/wire_test_"+str(t)+".pvd")
+        fib.WriteSurface("post/wire_mesh_test"+str(t)+".pvd")
+
+
+    # And the do a newton iteration at the end
+    DelW = Function(fib.problem.spaces['W'])
+
+    eps = 1.0
+    tol = 1.0e-10
+    maxiter = 10
+    itcnt = 0
+    while eps>tol and itcnt < maxiter:
+        R,AX,AV=sys(0.0)
+        apply_BCs(AX,R,0.0,True)
+        solve(AX,DelW.vector(),R)
+        fib.problem.fields['wx'].vector()[:] -= DelW.vector()[:]
+        eps=np.linalg.norm(DelW.vector().array(), ord=np.Inf)
+        print "  ",itcnt," Norm:", eps
+
+        fib.WriteFile("post/wire_test_"+str(t+itcnt)+".pvd")
+        fib.WriteSurface("post/wire_mesh_test"+str(t+itcnt)+".pvd")
+        itcnt += 1
+    
+    
+    weval = np.zeros(9)
+    fib.problem.fields['wx'].eval(weval,np.array([0.0,0.0,0.0],dtype=np.double))
     # print weval
     # print fib.problem.fields['wx'].compute_vertex_values()
 
