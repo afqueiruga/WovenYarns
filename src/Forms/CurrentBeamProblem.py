@@ -172,9 +172,9 @@ class CurrentBeamProblem(ProblemDescription):
         q,h1,h2,     = self.fields['wx'].split()
         vq,vh1,vh2 = self.fields['wv'].split()
         
-        g1 = project(self.properties['radius']*self.properties['E1']+h1,
+        g1 = project(self.properties['radius']*(self.properties['E1']+h1),
                      self.spaces['V'])
-        g2 = project(self.properties['radius']*self.properties['E2']+h2,
+        g2 = project(self.properties['radius']*(self.properties['E2']+h2),
                      self.spaces['V'])     
         return {
                 'q':q, 'h1':h1, 'h2':h2,

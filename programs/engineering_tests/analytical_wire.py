@@ -10,12 +10,12 @@ Properties
 
 Tmax = 10.0
 L = 1.0
-Delta = 0.9
+Delta = 0.9*L
 VBound = (L-Delta)/Tmax
 endpts = [ [-L,0.0,0.0],[L,0.0,0.0] ]
 
 props =  { 'radius':0.02,
-           'em_B':Constant((0.01,0.01,0.0)) } 
+           'em_B':Constant((0.7,0.7,0.0)) } 
         
 
 
