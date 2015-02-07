@@ -38,3 +38,8 @@ plt.show()
 
 plt.spy(warp.mcache['AX'].array())
 plt.show()
+
+F = warp.assemble_form('F','W')
+print F
+for l in F:
+    print l

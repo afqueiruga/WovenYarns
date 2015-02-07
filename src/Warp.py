@@ -100,15 +100,16 @@ class Warp():
 
         assem = BroadcastAssembler()
         assem.init_global_tensor(A,dim,rank,0, local_dofs, mmdofmap.off_process_owner())
-
-        for i,fib in enumerate(self.fibrils):
-            assem.sparsity_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
-        for i,cp in enumerate(self.contacts):
-            assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
+        if rank==2:
+            for i,fib in enumerate(self.fibrils):
+                assem.sparsity_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
+            for i,cp in enumerate(self.contacts):
+                assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
                                      cp.meshA, mmdofmap.part(self.fibril_pairs[i][0]),
                                      cp.meshB, mmdofmap.part(self.fibril_pairs[i][1]),
                                      cp.pair_flattened)
         assem.sparsity_apply()
+        
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
 
