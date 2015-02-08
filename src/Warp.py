@@ -75,8 +75,8 @@ class Warp():
         self.fibril_pairs = pairs
         self.contacts = []
         for i,p in enumerate(pairs):
-            cp = ContactPair(self.fibrils[p[0]].mesh,self.fibrils[p[0]].mesh,
-                             self.fibrils[p[1]].mesh,self.fibrils[p[1]].mesh,10,cutoff)
+            cp = ContactPair(self.fibrils[p[0]].current_mesh,self.fibrils[p[0]].mesh,
+                             self.fibrils[p[1]].current_mesh,self.fibrils[p[1]].mesh,10,cutoff)
             cp.make_table()
             self.contacts.append(cp)
 
@@ -105,8 +105,8 @@ class Warp():
                 assem.sparsity_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
             for i,cp in enumerate(self.contacts):
                 assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
-                                     cp.meshA, mmdofmap.part(self.fibril_pairs[i][0]),
-                                     cp.meshB, mmdofmap.part(self.fibril_pairs[i][1]),
+                                     self.fibrils[self.fibril_pairs[i][0]].mesh, mmdofmap.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][1]].mesh, mmdofmap.part(self.fibril_pairs[i][1]),
                                      cp.pair_flattened)
         assem.sparsity_apply()
         
@@ -115,9 +115,9 @@ class Warp():
 
         for i,cp in enumerate(self.contacts):
             assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
-                                     cp.meshA, mmdofmap.part(self.fibril_pairs[i][0]),
+                                     self.fibrils[self.fibril_pairs[i][0]].mesh, mmdofmap.part(self.fibril_pairs[i][0]),
                                      self.fibrils[self.fibril_pairs[i][1]].problem.forms[form_key], 
-                                     cp.meshB, mmdofmap.part(self.fibril_pairs[i][1]),
+                                     self.fibrils[self.fibril_pairs[i][1]].mesh, mmdofmap.part(self.fibril_pairs[i][1]),
                                      cp.pair_flattened,
                                      cp.chi_X_table.flatten(),
                                      cp.chi_n_max)
