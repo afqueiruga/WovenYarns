@@ -13,7 +13,7 @@ class Warp():
 
     Handles assembly, ContactPair management, io, etc.
     """
-    def __init__(self, endpts, props, defprops, Prob, order=(1,1)):
+    def __init__(self, endpts, props, defprops, Prob, order=(1,1),cutoff=1.0):
         """
         Initialize a warp from a list of end points.
         """
@@ -23,6 +23,7 @@ class Warp():
         # Initialize all of the fibrils
         for e,p in zip(endpts, props):
             prop = defprops.update(p)
+
             fib = Fibril(e,20,p,Prob, order=order)
 
             self.fibrils.append(fib)
@@ -45,8 +46,9 @@ class Warp():
             self.fields[name] = MultiMeshFunction(self.spaces[ self.fibrils[0].problem.space_key[name] ] )
             self.space_key[name] = self.fibrils[0].problem.space_key[name]
 
-        self.CG = ContactGroup([fib.mesh for fib in self.fibrils],radii=None) #TODO: RADII
-        
+        self.CG = ContactGroup([fib.mesh for fib in self.fibrils],
+                               radii=[fib.problem.properties['radius'].vector()[0] for fib in self.fibrils],
+                               cutoff=cutoff)
         self.mcache = {}
 
     def output_states(self,fname,i):
@@ -70,9 +72,9 @@ class Warp():
         for i,fib in enumerate(self.fibrils):
             fib.current_mesh = Mesh(fib.mesh)
             fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
-
+        self.CG.cutoff = cutoff    
         self.CG.CreateTables([f.current_mesh for f in self.fibrils])
-        
+    
         # for i,p in enumerate(pairs):
         #     cp = ContactPair(self.fibrils[p[0]].current_mesh,self.fibrils[p[0]].mesh,
         #                      self.fibrils[p[1]].current_mesh,self.fibrils[p[1]].mesh,10,cutoff)
