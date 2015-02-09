@@ -1,5 +1,7 @@
 from src import *
 
+from IPython import embed
+
 """
 Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
@@ -105,17 +107,19 @@ warp.output_states("post/impact/yarn_{0}_"+str(1)+".pvd",0)
 warp.output_surfaces("post/impact/mesh_{0}_"+str(1)+".pvd",0)
 
 
-Tmax=5.0
+Tmax=1.0
 NT = 100
 h = Tmax/NT
 warp.create_contacts(cutoff=0.8)
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
-bound = CompiledSubDomain("on_boundary")
+bound = CompiledSubDomain("(near(x[0],LENGTH) || near(x[0],-LENGTH) || near(x[1],WIDTH) || near(x[1],-WIDTH) ) && on_boundary",LENGTH=restL,WIDTH=restW)
+
 subs = MultiMeshSubSpace(warp.spaces['W'],0)
 bcall = MultiMeshDirichletBC(subs, zero, bound)
 def apply_BCs(K,R,t,hold=False):
-    bcall.apply(K,R)
+	bcall.apply(K,R)
+	
 def sys(time):
     return warp.assemble_forms(['F','AX','AV'],'W')
 
