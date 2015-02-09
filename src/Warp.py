@@ -4,7 +4,7 @@ import numpy as np
 from Fibril import Fibril
 from ContactPair import ContactPair
 from ContactMultiMesh import ContactMultiMesh
-
+from ContactGroup import ContactGroup
 
 from IPython import embed
 class Warp():
@@ -45,7 +45,8 @@ class Warp():
             self.fields[name] = MultiMeshFunction(self.spaces[ self.fibrils[0].problem.space_key[name] ] )
             self.space_key[name] = self.fibrils[0].problem.space_key[name]
 
-        self.contacts = []
+        self.CG = ContactGroup([fib.mesh for fib in self.fibrils],radii=None) #TODO: RADII
+        
         self.mcache = {}
 
     def output_states(self,fname,i):
@@ -66,19 +67,17 @@ class Warp():
         If a list of pairs isn't specified, just create the n^2 list.
         """
 
-        if not pairs:
-            pairs = [ (j,i) for j in xrange(len(self.fibrils)) for i in xrange(j+1,len(self.fibrils))  ]
         for i,fib in enumerate(self.fibrils):
             fib.current_mesh = Mesh(fib.mesh)
             fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
-            
-        self.fibril_pairs = pairs
-        self.contacts = []
-        for i,p in enumerate(pairs):
-            cp = ContactPair(self.fibrils[p[0]].current_mesh,self.fibrils[p[0]].mesh,
-                             self.fibrils[p[1]].current_mesh,self.fibrils[p[1]].mesh,10,cutoff)
-            cp.make_table()
-            self.contacts.append(cp)
+
+        self.CG.CreateTables([f.current_mesh for f in self.fibrils])
+        
+        # for i,p in enumerate(pairs):
+        #     cp = ContactPair(self.fibrils[p[0]].current_mesh,self.fibrils[p[0]].mesh,
+        #                      self.fibrils[p[1]].current_mesh,self.fibrils[p[1]].mesh,10,cutoff)
+        #     cp.make_table()
+        #     self.contacts.append(cp)
 
     # TODO: Build a table of forms -> spaces?
     def assemble_form(self, form_key, space_key):
@@ -103,24 +102,24 @@ class Warp():
         if rank==2:
             for i,fib in enumerate(self.fibrils):
                 assem.sparsity_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
-            for i,cp in enumerate(self.contacts):
-                assem.sparsity_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
-                                     self.fibrils[self.fibril_pairs[i][0]].mesh, mmdofmap.part(self.fibril_pairs[i][0]),
-                                     self.fibrils[self.fibril_pairs[i][1]].mesh, mmdofmap.part(self.fibril_pairs[i][1]),
-                                     cp.pair_flattened)
+            for i, (a,b, (etab,stab,xtab,Xtab,dtab)) in enumerate(self.CG.active_pairs):
+                assem.sparsity_cell_pair(self.fibrils[a].problem.forms[form_key], 
+                                     self.fibrils[a].mesh, mmdofmap.part(a),
+                                     self.fibrils[b].mesh, mmdofmap.part(b),
+                                     etab.flatten() )
         assem.sparsity_apply()
-        
+
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
 
-        for i,cp in enumerate(self.contacts):
-            assem.assemble_cell_pair(self.fibrils[self.fibril_pairs[i][0]].problem.forms[form_key], 
-                                     self.fibrils[self.fibril_pairs[i][0]].mesh, mmdofmap.part(self.fibril_pairs[i][0]),
-                                     self.fibrils[self.fibril_pairs[i][1]].problem.forms[form_key], 
-                                     self.fibrils[self.fibril_pairs[i][1]].mesh, mmdofmap.part(self.fibril_pairs[i][1]),
-                                     cp.pair_flattened,
-                                     cp.chi_X_table.flatten(),
-                                     cp.chi_n_max)
+        for i, (a,b, (etab,stab,xtab,Xtab,dtab)) in enumerate(self.CG.active_pairs):
+            assem.assemble_cell_pair(self.fibrils[a].problem.forms[form_key], 
+                                     self.fibrils[a].mesh, mmdofmap.part(a),
+                                     self.fibrils[b].problem.forms[form_key], 
+                                     self.fibrils[b].mesh, mmdofmap.part(b),
+                                     etab.flatten(),
+                                     Xtab.flatten(),
+                                     self.CG.chi_n_max)
         A.apply('add')
 
         self.mcache[form_key] = A

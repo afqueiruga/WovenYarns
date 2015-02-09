@@ -59,6 +59,7 @@ class ContactGroup():
                 elem_pairs.append([e,i])
         if len(elem_pairs)==0:
             return None
+        pair_table = np.array(elem_pairs,dtype=np.intc)
         
         refA = self.reference_meshes[a]
         refB = self.reference_meshes[b]
@@ -96,7 +97,7 @@ class ContactGroup():
         chi_X_table = np.vstack(Xtables)
         chi_dist_table = np.vstack(disttables)
         
-        return chi_s_table, chi_x_table, chi_X_table, chi_dist_table
+        return pair_table, chi_s_table, chi_x_table, chi_X_table, chi_dist_table
 
     def create_elem_pair_table(self, xA1,xA2,xB1,xB2, XA1,XA2,XB1,XB2):
         self.chi_n_max
