@@ -6,16 +6,16 @@ from IPython import embed
 Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
 
-restL = 2.2
-newL = 2.0
-restW = 2.2
-newW = 2.0
-NX = 6
-NY = 6
+restL = 5.1
+newL = 5.0
+restW = 5.1
+newW = 5.0
+NX = 8
+NY = 8
 
 endpts = []
 
-sheets = [ 0.0,-0.5  ]
+sheets = [ 0.0,-0.8  ]
 def add_sheet(zh):
     for i in xrange(NX):
         Wp = newW - newW/(NX-1.0)
@@ -28,16 +28,16 @@ def add_sheet(zh):
 
 for z in sheets:
     add_sheet(z)
-endpts.append([ [0, 0, 0.6],[ 0, 0, 0.4] ])
+endpts.append([ [0, 0, 3.2],[ 0, 0, 2.9] ])
 
 defaults = { 'radius':0.2,
              'em_B':Constant((0.0,0.0,0.0)) }
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':0.6 }
+props[-1] = { 'radius':2.0 }
 Nelems = [ 20 for i in endpts ]
 Nelems[-1] = 1
 
-warp = Warp(endpts,props,defaults, CurrentBeamProblem)
+warp = Warp(endpts,props,defaults, Nelems, CurrentBeamProblem)
 
 def initialize_sheet(startX,endX, startY,endY, restL,newL, height):
     for i in xrange(startX,endX):
@@ -90,13 +90,13 @@ warp.output_surfaces("post/impact/mesh_{0}_"+str(0)+".pvd",0)
 
 for i in xrange(len(sheets)):
     base = i*(NX+NY)
-    initialize_sheet(base,base+NX,base+NX,base+NX+NY, restL,newL, 0.15)
+    initialize_sheet(base,base+NX,base+NX,base+NX+NY, restL,newL, 0.2)
 
 fib =  warp.fibrils[-1]
 fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
-fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-1.0",
+fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-0.5",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
 mdof = warp.spaces['W'].dofmap()
@@ -106,11 +106,11 @@ warp.fields['wv'].vector()[ mdof.part(len(warp.fibrils)-1).dofs() ] = fib.proble
 warp.output_states("post/impact/yarn_{0}_"+str(1)+".pvd",0)
 warp.output_surfaces("post/impact/mesh_{0}_"+str(1)+".pvd",0)
 
+warp.create_contacts(cutoff=2.0)
 
-Tmax=1.0
-NT = 100
+Tmax=20.0
+NT = 200
 h = Tmax/NT
-warp.create_contacts(cutoff=0.8)
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
 bound = CompiledSubDomain("(near(x[0],LENGTH) || near(x[0],-LENGTH) || near(x[1],WIDTH) || near(x[1],-WIDTH) ) && on_boundary",LENGTH=restL,WIDTH=restW)
@@ -126,8 +126,11 @@ def sys(time):
 dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
                        warp.assemble_form('M','W'))
+warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
+    if t%10==0:
+        warp.create_contacts(cutoff=2.8)
     dirk.march()
-
-    warp.output_states("post/impact/yarn_{0}_"+str(t+2)+".pvd",1)
-    warp.output_surfaces("post/impact/mesh_{0}_"+str(t+2)+".pvd",1)
+    if t%1==0:
+        warp.output_states("post/impact/yarn_{0}_"+str(t/1+2)+".pvd",1)
+        warp.output_surfaces("post/impact/mesh_{0}_"+str(t/1+2)+".pvd",1)

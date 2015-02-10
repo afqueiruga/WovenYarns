@@ -13,7 +13,7 @@ class Warp():
 
     Handles assembly, ContactPair management, io, etc.
     """
-    def __init__(self, endpts, props, defprops, Prob, order=(1,1),cutoff=1.0):
+    def __init__(self, endpts, props, defprops, Nelems,Prob, order=(1,1),cutoff=1.0):
         """
         Initialize a warp from a list of end points.
         """
@@ -21,10 +21,10 @@ class Warp():
         self.CMM = ContactMultiMesh()
 
         # Initialize all of the fibrils
-        for e,p in zip(endpts, props):
+        for e,p,ne in zip(endpts, props,Nelems):
             prop = defprops.update(p)
 
-            fib = Fibril(e,20,p,Prob, order=order)
+            fib = Fibril(e,ne,p,Prob, order=order)
 
             self.fibrils.append(fib)
             self.CMM.add(fib.mesh)
