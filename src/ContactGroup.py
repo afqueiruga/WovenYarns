@@ -97,7 +97,7 @@ class ContactGroup():
         chi_s_table = np.vstack(stables)
         chi_x_table = np.vstack(xtables)
         chi_X_table = np.vstack(Xtables)
-        chi_dist_table = np.vstack(disttables)
+        chi_dist_table = np.hstack(disttables)
         
         return pair_table, chi_s_table, chi_x_table, chi_X_table, chi_dist_table
 
@@ -124,3 +124,36 @@ class ContactGroup():
             disttable[c] = np.linalg.norm(xtable[c,:3]-xtable[c,3:])
             
         return stable,xtable,Xtable,disttable
+
+    def chi_to_mesh(self, limits = None):
+        mesh = Mesh()
+        edit = MeshEditor()
+        edit.open(mesh,1,3)
+        nelem = 0
+        for a,b,(etab,stab,xtab,Xtab,dtab) in self.active_pairs:
+            if (limits is None) or ( (a in limits) or (b in limits) ):
+                nelem += len(xtab)
+        edit.init_vertices(2*nelem)
+        edit.init_cells(nelem)
+        cnt = 0
+        for a,b,(etab,stab,xtab,Xtab,dtab) in self.active_pairs:
+            if (limits is None) or ( (a in limits) or (b in limits) ):
+                for i in xrange(len(xtab)):
+                    edit.add_vertex(2*cnt, xtab[i,:3])
+                    edit.add_vertex(2*cnt+1, xtab[i,3:])
+                    edit.add_cell(cnt,2*cnt,2*cnt+1)
+                    cnt+=1
+        edit.close()
+        return mesh
+    
+    def OutputFile(self,fname, limits = None):
+        GammaC = self.chi_to_mesh(limits)
+        mfC = CellFunction("double",GammaC)
+        cnt = 0
+        for a,b,(etab,stab,xtab,Xtab,dtab) in self.active_pairs:
+            if (limits is None) or ( (a in limits) or (b in limits) ):
+                for i in xrange(len(xtab)):
+                    mfC.set_value(cnt,dtab[i])
+                    cnt+=1
+        ff = File(fname)
+        ff << mfC
