@@ -1,10 +1,13 @@
+from dolfin import Expression
+import numpy as np
+
 from Warp import Warp
 
 """
 Define routines for initializing textile geometries.
 """
 
-def PlainWeave_endpts(NX,restX,setX, NY,restY,setY, zpos):
+def PlainWeave_endpts(NX,restX,setX, NY,restY,setY, zpos,height):
     endpts = []
     for i in xrange(NX):
         Wp = setY - setY/(NX-1.0)
@@ -13,10 +16,10 @@ def PlainWeave_endpts(NX,restX,setX, NY,restY,setY, zpos):
     for i in xrange(NY):
         Wp = setX - setX/(NY-1.0)
         p = 2.0*Wp/(NY-1.0)*i -Wp
-        endpts.append([ [ p, -restY, zh],[p, restY,zh] ])
+        endpts.append([ [ p, -restY, zpos],[p, restY,zpos] ])
     return endpts
 
-def PlainWeave_initialize(warp, istart, NX,restX,setX, NY,restY,setY):
+def PlainWeave_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpos,height):
     for i in xrange(istart,istart+NX):
         fib = warp.fibrils[i]
         fib.problem.fields['wx'].interpolate(Expression((
@@ -30,7 +33,7 @@ def PlainWeave_initialize(warp, istart, NX,restX,setX, NY,restY,setY):
             "0",
             "0"),
             sq = -(restX-setX)/restX,
-            p=np.pi/restL *(endY-startY)/2.0,
+            p=np.pi/restX *(NY)/2.0,
             A1=(-1.0 if i%2==0 else 1.0)*height
             ))
         fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
@@ -49,7 +52,7 @@ def PlainWeave_initialize(warp, istart, NX,restX,setX, NY,restY,setY):
             "0",
             "0"),
             sq = -(restY-setY)/restY,
-            p=np.pi/restL *(endX-startX)/2.0,
+            p=np.pi/restY *(NX)/2.0,
             A1=(-1.0 if i%2==1 else 1.0)*height
             ))
         fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",

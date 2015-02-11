@@ -138,3 +138,9 @@ class Warp():
             mdof = self.spaces[self.space_key[key]].dofmap()
             for i,fib in enumerate(self.fibrils):
                 fib.problem.fields[key].vector()[:] = f.vector()[mdof.part(i).dofs()]
+
+    def pull_fibril_fields(self):
+        for key,f in self.fields.iteritems():
+            mdof = self.spaces[self.space_key[key]].dofmap()
+            for i,fib in enumerate(self.fibrils):
+                 f.vector()[mdof.part(i).dofs()] = fib.problem.fields[key].vector()[:]

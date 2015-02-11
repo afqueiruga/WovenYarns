@@ -6,28 +6,13 @@ from IPython import embed
 Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
 
-restL = 5.1
-newL = 5.0
-restW = 5.1
-newW = 5.0
-NX = 8
-NY = 8
+sheets = [ (8,5.2,5.0, 8,5.2,5.0,  0.0,0.2),
+           (8,5.2,5.0, 8,5.2,5.0, -0.8,0.2) ]
 
 endpts = []
 
-sheets = [ 0.0,-0.8  ]
-def add_sheet(zh):
-    for i in xrange(NX):
-        Wp = newW - newW/(NX-1.0)
-        p = 2.0*Wp/(NX-1.0)*i - Wp
-        endpts.append([ [-restL, p,zh],[ restL, p,zh] ])
-    for i in xrange(NY):
-        Wp = newL - newL/(NX-1.0)
-        p = 2.0*Wp/(NY-1.0)*i -Wp
-        endpts.append([ [ p, -restW, zh],[p, restW,zh] ])
-
 for z in sheets:
-    add_sheet(z)
+    endpts.extend(  Geometries.PlainWeave_endpts(*z) )
 endpts.append([ [0, 0, 3.2],[ 0, 0, 2.9] ])
 
 defaults = { 'radius':0.2,
@@ -39,59 +24,16 @@ Nelems[-1] = 1
 
 warp = Warp(endpts,props,defaults, Nelems, CurrentBeamProblem)
 
-def initialize_sheet(startX,endX, startY,endY, restL,newL, height):
-    for i in xrange(startX,endX):
-        fib = warp.fibrils[i]
-        fib.problem.fields['wx'].interpolate(Expression((
-            " x[0]*sq",
-            "0",
-            "A1*sin(x[0]*p)",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0"),
-            sq = -(restL-newL)/restL,
-            p=np.pi/restL *(endY-startY)/2.0,
-            A1=(-1.0 if i%2==0 else 1.0)*height
-            ))
-        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0")))
-        mdof = warp.spaces['W'].dofmap()
-        warp.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
-        warp.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
-    for i in xrange(startY,endY):
-        fib = warp.fibrils[i]
-        fib.problem.fields['wx'].interpolate(Expression((
-            "0",
-            " x[1]*sq",
-            "A1*sin(x[1]*p)",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0"),
-            sq = -(restL-newL)/restL,
-            p=np.pi/restL *(endX-startX)/2.0,
-            A1=(-1.0 if i%2==1 else 1.0)*height
-            ))
-        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0")))
-        mdof = warp.spaces['W'].dofmap()
-        warp.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
-        warp.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
 
 warp.output_states("post/impact/yarn_{0}_"+str(0)+".pvd",0)
 warp.output_surfaces("post/impact/mesh_{0}_"+str(0)+".pvd",0)
 
-for i in xrange(len(sheets)):
-    base = i*(NX+NY)
-    initialize_sheet(base,base+NX,base+NX,base+NX+NY, restL,newL, 0.2)
+istart=0
+for z in sheets:
+    Geometries.PlainWeave_initialize(warp, istart, *z)
+    istart += z[0]+z[3]
 
+    
 fib =  warp.fibrils[-1]
 fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
@@ -99,12 +41,12 @@ fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
 fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-0.5",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
-mdof = warp.spaces['W'].dofmap()
-warp.fields['wx'].vector()[ mdof.part(len(warp.fibrils)-1).dofs() ] = fib.problem.fields['wx'].vector()[:]
-warp.fields['wv'].vector()[ mdof.part(len(warp.fibrils)-1).dofs() ] = fib.problem.fields['wv'].vector()[:]
+
 
 warp.output_states("post/impact/yarn_{0}_"+str(1)+".pvd",0)
 warp.output_surfaces("post/impact/mesh_{0}_"+str(1)+".pvd",0)
+
+exit()
 
 warp.create_contacts(cutoff=2.0)
 
