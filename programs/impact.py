@@ -128,8 +128,8 @@ dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.assemble_form('M','W'))
 warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
-    if t%10==0:
-        warp.create_contacts(cutoff=2.8)
+    if t%1==0:
+        warp.create_contacts(cutoff=2.5)
     dirk.march()
     if t%1==0:
         warp.output_states("post/impact/yarn_{0}_"+str(t/1+2)+".pvd",1)
