@@ -150,9 +150,9 @@ class CurrentBeamProblem(ProblemDescription):
         # Contact forms
         xr = X0 + q
         dist = sqrt(dot(jump(xr),jump(xr)))
-        overlap = (2.0*Constant(radius)-dist)
+        overlap = (2.0*avg(radius)-dist)
         ContactForm = -dot(jump(tvq),
-                        conditional(ge(overlap,0.0), -40.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                        conditional(ge(overlap,0.0), -4.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
         
         # Take the functional derivatives of everything
