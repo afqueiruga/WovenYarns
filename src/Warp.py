@@ -2,7 +2,6 @@ from dolfin import *
 import numpy as np
 
 from Fibril import Fibril
-from ContactPair import ContactPair
 from ContactMultiMesh import ContactMultiMesh
 from ContactGroup import ContactGroup
 
