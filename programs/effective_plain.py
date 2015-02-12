@@ -6,8 +6,8 @@ from IPython import embed
 Compute the effective properties of a textile square
 """
 
-sheet = (2, 2.1,2.0, 2, 2.1,2.0, 
-         0.0,0.32*2.0, [3,4,3], 0.32)
+sheet = (4, 4.2,4.0, 4, 4.2,4.0, 
+         0.0,0.35*2.0, [3,4,3], 0.35)
 endpts = Geometries.PlainWeaveFibrils_endpts(*sheet)
 defaults = { 'radius':0.2,
              'em_B':Constant((0.0,0.0,0.0)) }
@@ -28,7 +28,7 @@ warp.create_contacts(cutoff=0.5)
 
 
 Tmax=20.0
-NT = 200
+NT = 100
 h = Tmax/NT
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
