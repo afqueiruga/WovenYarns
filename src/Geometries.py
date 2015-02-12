@@ -61,3 +61,86 @@ def PlainWeave_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpos,heigh
 
 
 
+
+
+
+
+def PlainWeaveFibrils_endpts(NX,restX,setX, NY,restY,setY, zpos,height, pattern,Dia):
+    endpts = []
+    for i in xrange(NX):
+        p = -setY + 2.0*setY/(NX)*(i+0.5)
+        endpts.extend( PackedYarn([ [-restX, p,zpos],[ restX, p,zpos] ], pattern,Dia) )
+    for i in xrange(NY):
+        p = -setX + 2.0*setX/(NY)*(i+0.5)
+        endpts.extend( PackedYarn([ [ p, -restY, zpos],[p, restY,zpos] ], pattern,Dia))
+    return endpts
+
+
+def PlainWeaveFibrils_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpos,height, pattern,Dia):
+    for i in xrange(istart,istart+NX):
+        for j in xrange(np.sum(pattern)):
+            fib = warp.fibrils[i*np.sum(pattern)+j]
+            fib.problem.fields['wx'].interpolate(Expression((
+                " x[0]*sq",
+                "0",
+                "A1*sin(x[0]*p)",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0"),
+                sq = -(restX-setX)/restX,
+                p=np.pi/restX *(NY)/2.0,
+                A1=(-1.0 if i%2==0 else 1.0)*height
+                ))
+            fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
+                                                             "0.0"," 0.0","0.0",
+                                                             "0.0","0.0","0.0")))
+    for i in xrange(istart+NX,istart+(NX+NY)):
+        for j in xrange(np.sum(pattern)):
+
+            fib = warp.fibrils[i*np.sum(pattern)+j]
+            fib.problem.fields['wx'].interpolate(Expression((
+                "0",
+                " x[1]*sq",
+                "A1*sin(x[1]*p)",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0"),
+                sq = -(restY-setY)/restY,
+                p=np.pi/restY *(NX)/2.0,
+                A1=(-1.0 if i%2==1 else 1.0)*height
+                ))
+            fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
+                                                             "0.0"," 0.0","0.0",
+                                                             "0.0","0.0","0.0")))
+
+
+def PackedYarn(centers, pattern,  Dia):
+    print centers
+    centers[0] = np.array(centers[0])
+    centers[1] = np.array(centers[1])
+    E = centers[1]- centers[0]
+    if E[1]==0.0 and E[2]==0.0:
+        e1 = np.array([0.0,1.0,0.0])
+        e2 = np.array([0.0,0.0,1.0])
+    elif E[0]==0.0 and E[2]==0.0:
+        e1 = np.array([1.0,0.0,0.0])
+        e2 = np.array([0.0,0.0,1.0])
+    elif E[0]==0.0 and E[1]==0.0:
+        e1 = np.array([1.0,0.0,0.0])
+        e2 = np.array([0.0,1.0,0.0])
+    else:
+        print "Error: Fibrils must be axis aligned! But I'm not going to stop."
+        orientation=0
+    endpts = []
+    for i,row in enumerate(pattern):
+        p2 = Dia*(1.0*i-(len(pattern)-1)/2.0)
+        for j in xrange(row):
+            p1 = Dia*(1.0*j-(row-1)/2.0)
+            endpts.append([centers[0]+p1*e1+p2*e2, centers[1]+p1*e1+p2*e2])
+    return endpts

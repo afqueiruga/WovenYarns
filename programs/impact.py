@@ -43,10 +43,12 @@ fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-0.5",
                                        "0.0","0.0","0.0")))
 
 
+warp.pull_fibril_fields()
+
+
 warp.output_states("post/impact/yarn_{0}_"+str(1)+".pvd",0)
 warp.output_surfaces("post/impact/mesh_{0}_"+str(1)+".pvd",0)
 
-exit()
 
 warp.create_contacts(cutoff=2.0)
 
