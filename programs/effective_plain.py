@@ -10,7 +10,8 @@ sheet = (4, 4.2,4.0, 4, 4.2,4.0,
          0.0,0.35*2.0, [3,4,3], 0.35)
 endpts = Geometries.PlainWeaveFibrils_endpts(*sheet)
 defaults = { 'radius':0.2,
-             'em_B':Constant((0.0,0.0,0.0)) }
+             'em_B':Constant((0.0,0.0,0.0)),
+             'dissipation':-2.0e-1}
 props = [ {} for i in endpts ]
 Nelems = [ 20 for i in endpts ]
 
@@ -27,7 +28,7 @@ warp.output_surfaces("post/RVE/mesh_{0}_"+str(1)+".pvd",0)
 warp.create_contacts(cutoff=0.5)
 
 
-Tmax=20.0
+Tmax=10.0
 NT = 100
 h = Tmax/NT
 
