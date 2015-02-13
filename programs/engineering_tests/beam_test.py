@@ -60,20 +60,43 @@ def solveit(Nelem,p):
     # print fib.problem.fields['wx'].compute_vertex_values()
 
     return weval[1]
-Nelems = [2,4,6,8,10,12,14,16,18,20,30,40,50] #,100 ,200] #,300,400,600] #,800,1000]
-ps = [ 1,2,3, 4]
-for p in ps:
-    points = map(lambda x:solveit(x,p),Nelems)
-    print points
-    plt.loglog([L/x for x in Nelems],
-               [np.abs( (y - truesol)) for y in points]
-               ,'+-',label='p='+str(p))
-plt.legend()
-# plt.axhline(truesol)
-# plt.plot(Nelems,points)
-# plt.figure()
-plt.show()
+Nelems = [ [250,275,300,325,350,375,400],
+	   [100,125,150,175,200],
+	   [2,3,4,5,10,15,20,25],
+	   [2,3,4,5,6,11] ]
+ps = [ 1,2 ,3, 4]
+points = []
+for NS,p in zip(Nelems,ps):
+    points.append( map(lambda x:solveit(x,p),NS) )
+    # print points
+bestsol = points[-1][-1]
+def make_plots(Nelems,points):
+    for p,NS,pts in zip(ps,Nelems,points):
+        plt.loglog([L/x for x in NS],
+                   [np.abs( (y - bestsol)) for y in pts]
+                   ,'+-',label='p='+str(p))
+        
+        plt.legend()
+    plt.figure()
+    for p,NS,pts in zip(ps,Nelems,points):
+        plt.plot([x for x in NS],
+                 [y for y in pts]
+                 ,'+-',label='p='+str(p))
+        plt.axhline(truesol)
+    plt.show()
 
 
-# from IPython import embed
-# embed()
+def compute_convergence(hs,points):
+    import scipy.stats
+    best = points[-1][-1]
+    for ix,(NS,pts) in enumerate(zip(Nelems,points)):
+        hs = [L/x for x in NS]
+        print (scipy.stats.linregress([ np.log(x) for x in hs[:(-1 if ix==len(points)-1 else -2)] ],
+                                      [ np.log(np.abs((y-best))) for y in pts[:(-1 if ix==len(points)-1 else -2)] ]))[0],
+        print ""
+
+make_plots(Nelems,points)
+compute_convergence(Nelems, points)
+
+from IPython import embed
+embed()
