@@ -86,7 +86,7 @@ def make_plots(Nelems,points):
     plt.show()
 
 
-def compute_convergence(hs,points):
+def compute_convergence(Nelems,points):
     import scipy.stats
     best = points[-1][-1]
     for ix,(NS,pts) in enumerate(zip(Nelems,points)):

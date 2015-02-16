@@ -85,7 +85,7 @@ def solve(order,NT):
 
 Tmax = 10.0
 NTS = xrange(100,301,25)
-orders = [1,2]
+orders = [1]
 all_series = [ ]
 
 for order in orders:
