@@ -163,14 +163,14 @@ class DecoupledProblem(ProblemDescription):
             V_FLoc = tVol.dx(orientation) * em_sig * Vol.dx(orientation) \
               - inner(tVol.dx(orientation),em_sig*(vB_ref))
 
-            em_Egal = inv(F).T*(-tVol.dx(orientation) + vB_ref)*Ez
+            em_Egal = inv(F).T*(-Vol.dx(orientation) + vB_ref)*Ez
             em_J = em_sig*em_Egal
             
             
             # Thermal Form
             Gradv = outer(v.dx(orientation),Ez) + outer(vh1,E1) + outer(vh2,E2)
             S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
-            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*dot(Egal,em_J)
+            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*dot(em_Egal,em_J)
 
             # Forces
             ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
@@ -196,7 +196,7 @@ class DecoupledProblem(ProblemDescription):
         AX = derivative(FMechTot,wx,Delw)
         AV = derivative(FMechTot,wv,Delw)
         AT = derivative(FTherTot,T,DelT)
-        AE = derivative(FElecTot,Vol,DelV)
+        AE = derivative(FElecTot,Vol,DelVol)
         
         # Dictionize and return
         return {
