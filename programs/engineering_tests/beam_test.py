@@ -4,7 +4,6 @@ Take a single fiber and check it against standard Euler-Bernoulli beam theory.
 Check convergences as we refine, too.
 
 TODO:
- Vary poly order, nu, Nelems, to check conversion
  Do a torsion test
 
 """

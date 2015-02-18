@@ -83,8 +83,9 @@ def solve(order,NT):
     return (times,time_series,h,order)
 
 
-Tmax = 10.0
-NTS = xrange(100,301,25)
+Tmax = 20.0
+NTS = range(50,301,50)
+NTS.append(500)
 orders = [1]
 all_series = [ ]
 
