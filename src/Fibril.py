@@ -8,6 +8,19 @@ class Fibril():
     def __init__(self, pts, Nelem, properties, Prob, order=(1,1)):
         me = create_line(np.array(pts[0]), np.array(pts[1]), Nelem)
         self.mesh = me
+
+        # Initialize mesh function for boundary domains
+        self.boundary_domains = [
+            CompiledSubDomain("near(x[0],X) && near(x[1],Y) && near(x[2],Z) && on_boundary",
+                              X=pts[0][0],Y=pts[0][1],Z=pts[0][2]),
+            CompiledSubDomain("near(x[0],X) && near(x[1],Y) && near(x[2],Z) && on_boundary",
+                              X=pts[1][0],Y=pts[1][1],Z=pts[1][2])
+        ]
+        self.boundaries = FacetFunction("size_t", self.mesh)
+        self.boundaries.set_all(0)
+        for i,b in enumerate(self.boundary_domains):
+            b.mark(self.boundaries,i)
+        
         
         E = np.array(pts[1])- np.array(pts[0])
         if E[1]==0.0 and E[2]==0.0:
@@ -20,7 +33,7 @@ class Fibril():
             print "Error: Fibrils must be axis aligned! But I'm not going to stop."
             orientation=0
         
-        self.problem = Prob(self.mesh,properties, orientation = orientation, order=order)
+        self.problem = Prob(self.mesh,properties, boundaries=self.boundaries, orientation = orientation, order=order)
 
     def WriteFile(self,fname,i=0):
         self.problem.WriteFile(fname,i)

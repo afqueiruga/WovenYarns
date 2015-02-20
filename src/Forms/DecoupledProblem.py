@@ -14,11 +14,16 @@ default_properties = {
     'em_sig':10.0,
     'radius':0.15,
     'f_dens_ext':Constant((0.0,0.0,0.0)),
-    'dissipation':1.0e-1
+    'dissipation':1.0e-1,
+    'em_bc_J_0': 0.0,
+    'em_bc_J_1': 0.0,
+    'em_bc_r_0': 0.0,
+    'em_bc_r_1': 0.0
+
 }
 class DecoupledProblem(ProblemDescription):
     """ This creates a multiphysics problem with different spaces for each field """
-    def __init__(self,mesh,properties, buildform=True, orientation=0, order=(1,1)):
+    def __init__(self,mesh,properties, boundaries=None,buildform=True, orientation=0, order=(1,1)):
         if properties.has_key("orientation"):
             orientation = properties["orientation"]
             properties.pop("orientation",None)
@@ -42,7 +47,7 @@ class DecoupledProblem(ProblemDescription):
         self.orientation = orientation
         self.order = order
         
-        ProblemDescription.__init__(self,mesh,p,False)
+        ProblemDescription.__init__(self,mesh,p,boundaries,False)
         
         if not properties.has_key("X0"):
             X0 = Function(self.spaces['V'])
@@ -100,7 +105,9 @@ class DecoupledProblem(ProblemDescription):
         dvqdt,dvh1dt,dvh2dt = split(dvdtW)
         dTdt = TrialFunction(space_S)
 
-        
+        # Set up the measures
+        ds = Measure("ds")[self.boundaries]
+
 
         # Fetch the material properties
         PROP = self.properties
@@ -119,6 +126,12 @@ class DecoupledProblem(ProblemDescription):
         f_dens_ext = PROP['f_dens_ext']
         dissipation = PROP['dissipation']
 
+        # Neumann BC values
+        em_bc_J_0 = PROP['em_bc_J_0']
+        em_bc_r_0 = PROP['em_bc_r_0']
+        em_bc_J_1 = PROP['em_bc_J_1']
+        em_bc_r_1 = PROP['em_bc_r_1']
+                
         orientation = self.orientation
         Ez = PROP['Ez']
         E1 = PROP['E1']
@@ -160,6 +173,7 @@ class DecoupledProblem(ProblemDescription):
 
             # Voltage Form
             vB_ref = dot(F.T*cross(v,em_B),Ez)
+            # It shouldn't be sig in here, but it actually doesn't matter
             V_FLoc = tVol.dx(orientation) * em_sig * Vol.dx(orientation) \
               - inner(tVol.dx(orientation),em_sig*(vB_ref))
 
@@ -176,10 +190,14 @@ class DecoupledProblem(ProblemDescription):
             ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
             FExt = inner(tv,cross(em_J,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
 
+            # Neumann type BCs:
+            V_FBCLoc = -weight*J0*tVol*(em_bc_r_0*Vol+em_bc_J_0)*ds(0) \
+                      + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(1)
+            
             # Finalize
             FMechLoc = weight*J0*( FInt + FExt ) * dx
             FTherLoc = weight*J0*( T_FLoc ) * dx
-            FElecLoc = weight*J0*( V_FLoc ) *dx
+            FElecLoc = weight*J0*( V_FLoc ) *dx + V_FBCLoc
             MMechLoc = weight*J0*( inner(tv,rho*dvdt) )*dx
             MTherLoc = weight*J0*( inner(tT,rho*T_cp*dTdt) )*dx
             
@@ -197,7 +215,8 @@ class DecoupledProblem(ProblemDescription):
         AV = derivative(FMechTot,wv,Delw)
         AT = derivative(FTherTot,T,DelT)
         AE = derivative(FElecTot,Vol,DelVol)
-        
+
+        # 
         # Dictionize and return
         return {
             'F' : Form(FMechTot),
