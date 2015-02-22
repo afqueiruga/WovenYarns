@@ -15,10 +15,14 @@ default_properties = {
     'radius':0.15,
     'f_dens_ext':Constant((0.0,0.0,0.0)),
     'dissipation':1.0e-1,
+    'contact_penalty': 4.0,
+    'mech_bc_trac_0': Constant((0.0,0.0,0.0)),
+    'mech_bc_trac_1': Constant((0.0,0.0,0.0)),
     'em_bc_J_0': 0.0,
     'em_bc_J_1': 0.0,
     'em_bc_r_0': 0.0,
     'em_bc_r_1': 0.0
+    
 
 }
 class DecoupledProblem(ProblemDescription):
@@ -126,12 +130,16 @@ class DecoupledProblem(ProblemDescription):
         f_dens_ext = PROP['f_dens_ext']
         dissipation = PROP['dissipation']
 
+        contact_penalty = PROP['contact_penalty']
+        
         # Neumann BC values
         em_bc_J_0 = PROP['em_bc_J_0']
         em_bc_r_0 = PROP['em_bc_r_0']
         em_bc_J_1 = PROP['em_bc_J_1']
         em_bc_r_1 = PROP['em_bc_r_1']
-                
+        mech_bc_trac_0 = PROP['mech_bc_trac_0']
+        mech_bc_trac_1 = PROP['mech_bc_trac_1']
+        
         orientation = self.orientation
         Ez = PROP['Ez']
         E1 = PROP['E1']
@@ -147,6 +155,14 @@ class DecoupledProblem(ProblemDescription):
         FElecTot = None
         MassMech = None
         MassTher = None
+
+        p_t0_0 = None
+        p_t1_0 = None
+        p_t2_0 = None
+        p_t0_1 = None
+        p_t1_1 = None
+        p_t2_1 = None
+        
         GPS2D = CircCart2D[4]
         J0 = radius*radius
         for z1,z2,weight in GPS2D:
@@ -191,8 +207,19 @@ class DecoupledProblem(ProblemDescription):
             FExt = inner(tv,cross(em_J,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
 
             # Neumann type BCs:
+            Mech_FBCLoc =  -weight*J0*inner(tv,mech_bc_trac_0)*ds(0) \
+                        + weight*J0*inner(tv,mech_bc_trac_1)*ds(1)
             V_FBCLoc = -weight*J0*tVol*(em_bc_r_0*Vol+em_bc_J_0)*ds(0) \
                       + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(1)
+
+            # These are evaluation forms, no test functions
+            p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),dot(F*S,Ez))*ds(0)
+            p_t1_0_Loc = -weight*J0*dot(Constant((0.0,1.0,0.0)),dot(F*S,Ez))*ds(0)
+            p_t2_0_Loc = -weight*J0*dot(Constant((0.0,0.0,1.0)),dot(F*S,Ez))*ds(0)
+            p_t0_1_Loc = weight*J0*dot(Constant((1.0,0.0,0.0)),dot(F*S,Ez))*ds(1)
+            p_t1_1_Loc = weight*J0*dot(Constant((0.0,1.0,0.0)),dot(F*S,Ez))*ds(1)
+            p_t2_1_Loc = weight*J0*dot(Constant((0.0,0.0,1.0)),dot(F*S,Ez))*ds(1)
+
             
             # Finalize
             FMechLoc = weight*J0*( FInt + FExt ) * dx
@@ -206,11 +233,25 @@ class DecoupledProblem(ProblemDescription):
             FElecTot = FElecLoc if FElecTot is None else FElecTot + FElecLoc
             MassMech = MMechLoc if MassMech is None else MassMech + MMechLoc
             MassTher = MTherLoc if MassTher is None else MassTher + MTherLoc
+
+            p_t0_0 = p_t0_0_Loc if p_t0_0 is None else p_t0_0 + p_t0_0_Loc
+            p_t1_0 = p_t1_0_Loc if p_t1_0 is None else p_t1_0 + p_t1_0_Loc
+            p_t2_0 = p_t2_0_Loc if p_t2_0 is None else p_t2_0 + p_t2_0_Loc
+            p_t0_1 = p_t0_1_Loc if p_t0_1 is None else p_t0_1 + p_t0_1_Loc
+            p_t1_1 = p_t1_1_Loc if p_t1_1 is None else p_t1_1 + p_t1_1_Loc
+            p_t2_1 = p_t2_1_Loc if p_t2_1 is None else p_t2_1 + p_t2_1_Loc
+            
             
         # Contact Forms
-
-        # Functional derivatives
+        xr = X0 + q
+        dist = sqrt(dot(jump(xr),jump(xr)))
+        overlap = (2.0*avg(radius)-dist)
+        ContactForm = -dot(jump(tvq),
+                        conditional(ge(overlap,0.0), -contact_penalty*overlap,0.0)*jump(xr)/dist) \
+                        *dc(0, metadata={"num_cells": 2,"special":"contact"})
         
+        # Functional derivatives
+        FMechTot += ContactForm
         AX = derivative(FMechTot,wx,Delw)
         AV = derivative(FMechTot,wv,Delw)
         AT = derivative(FTherTot,T,DelT)
@@ -227,5 +268,25 @@ class DecoupledProblem(ProblemDescription):
             'AT': Form(AT),
             'MT': Form(MassTher),
             'FE': Form(FElecTot),
-            'AE': Form(AE)
+            'AE': Form(AE),
+            'p_t0_0':Form(p_t0_0),
+            'p_t1_0':Form(p_t1_0),
+            'p_t2_0':Form(p_t2_0),
+            'p_t0_1':Form(p_t0_1),
+            'p_t1_1':Form(p_t1_1),
+            'p_t2_1':Form(p_t2_1)
+            }
+
+    def split_for_io(self):
+        q,h1,h2,     = self.fields['wx'].split()
+        vq,vh1,vh2 = self.fields['wv'].split()
+        
+        g1 = project(self.properties['radius']*(self.properties['E1']+h1),
+                     self.spaces['V'])
+        g2 = project(self.properties['radius']*(self.properties['E2']+h2),
+                     self.spaces['V'])     
+        return {
+                'q':q, 'h1':h1, 'h2':h2,
+                'vq':vq, 'vh1':vh1, 'vh2':vh2,
+                'g1':g1, 'g2':g2
             }
