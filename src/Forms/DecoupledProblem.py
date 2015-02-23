@@ -162,7 +162,8 @@ class DecoupledProblem(ProblemDescription):
         p_t0_1 = None
         p_t1_1 = None
         p_t2_1 = None
-        
+        p_J_0 = None
+        p_J_1 = None
         GPS2D = CircCart2D[4]
         J0 = radius*radius
         for z1,z2,weight in GPS2D:
@@ -213,13 +214,15 @@ class DecoupledProblem(ProblemDescription):
                       + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(1)
 
             # These are evaluation forms, no test functions
-            p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),dot(F*S,Ez))*ds(0)
-            p_t1_0_Loc = -weight*J0*dot(Constant((0.0,1.0,0.0)),dot(F*S,Ez))*ds(0)
-            p_t2_0_Loc = -weight*J0*dot(Constant((0.0,0.0,1.0)),dot(F*S,Ez))*ds(0)
-            p_t0_1_Loc = weight*J0*dot(Constant((1.0,0.0,0.0)),dot(F*S,Ez))*ds(1)
-            p_t1_1_Loc = weight*J0*dot(Constant((0.0,1.0,0.0)),dot(F*S,Ez))*ds(1)
-            p_t2_1_Loc = weight*J0*dot(Constant((0.0,0.0,1.0)),dot(F*S,Ez))*ds(1)
+            p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(0)
+            p_t1_0_Loc = -weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(0)
+            p_t2_0_Loc = -weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(0)
+            p_t0_1_Loc =  weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(1)
+            p_t1_1_Loc =  weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(1)
+            p_t2_1_Loc =  weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(1)
 
+            p_J_0_Loc = -weight*J0*dot(Ez,em_J)*ds(0)
+            p_J_1_Loc =  weight*J0*dot(Ez,em_J)*ds(1)
             
             # Finalize
             FMechLoc = weight*J0*( FInt + FExt ) * dx
@@ -240,7 +243,8 @@ class DecoupledProblem(ProblemDescription):
             p_t0_1 = p_t0_1_Loc if p_t0_1 is None else p_t0_1 + p_t0_1_Loc
             p_t1_1 = p_t1_1_Loc if p_t1_1 is None else p_t1_1 + p_t1_1_Loc
             p_t2_1 = p_t2_1_Loc if p_t2_1 is None else p_t2_1 + p_t2_1_Loc
-            
+            p_J_0 = p_J_0_Loc if p_J_0 is None else p_J_0 + p_J_0_Loc
+            p_J_1 = p_J_1_Loc if p_J_1 is None else p_J_1 + p_J_1_Loc
             
         # Contact Forms
         xr = X0 + q
@@ -269,12 +273,15 @@ class DecoupledProblem(ProblemDescription):
             'MT': Form(MassTher),
             'FE': Form(FElecTot),
             'AE': Form(AE),
+            
             'p_t0_0':Form(p_t0_0),
             'p_t1_0':Form(p_t1_0),
             'p_t2_0':Form(p_t2_0),
             'p_t0_1':Form(p_t0_1),
             'p_t1_1':Form(p_t1_1),
-            'p_t2_1':Form(p_t2_1)
+            'p_t2_1':Form(p_t2_1),
+            'p_J,0':Form(p_J_0),
+            'p_J_1':Form(p_J_1)
             }
 
     def split_for_io(self):
