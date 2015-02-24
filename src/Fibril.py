@@ -74,3 +74,44 @@ class Fibril():
         
         vf = File(fname,"ascii")
         vf << hullmesh
+
+    def WriteSolid(self,fname,i=0,NT=16):
+        fields = self.problem.split_for_io()
+
+        qN = fields['q'].compute_vertex_values()
+        qN = qN.reshape([3,qN.shape[0]/3])
+        g1N = fields['g1'].compute_vertex_values()
+        g1N = g1N.reshape([3,g1N.shape[0]/3])
+        g2N = fields['g2'].compute_vertex_values()
+        g2N = g2N.reshape([3,g2N.shape[0]/3])
+        coords = fields['q'].function_space().mesh().coordinates()
+
+        solidmesh = Mesh()
+        edit = MeshEditor()
+        edit.open(solidmesh,3,3)
+        lda = NT+1
+        edit.init_vertices(lda*qN.shape[1])
+        for ix in xrange(qN.shape[1]):
+            cent = qN[:,ix]+coords[ix]
+            g1c = g1N[:,ix]
+            g2c = g2N[:,ix]
+            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)):
+                edit.add_vertex(lda*ix+jt,
+                                np.array(cent+np.cos(theta)*g1c+np.sin(theta)*g2c,
+                                         dtype=np.float_))
+            edit.add_vertex(lda*ix+NT,
+                            np.array(cent,dtype=np.float_))
+        edit.init_cells( qN.shape[1]*3*NT)
+        for ix in xrange(1,qN.shape[1]):
+            for jt in xrange(NT-1):
+                edit.add_cell(3*NT*(ix-1)+3*jt,   lda*ix+jt   , lda*ix+jt+1, lda*ix+NT, lda*(ix-1)+jt+0)
+                edit.add_cell(3*NT*(ix-1)+3*jt+1, lda*(ix-1)+jt   , lda*(ix-1)+jt+1, lda*(ix-1)+NT, lda*ix+jt+1)
+                edit.add_cell(3*NT*(ix-1)+3*jt+2, lda*ix+NT,lda*(ix-1)+NT,lda*ix+jt+1,lda*(ix-1)+jt+0)
+            # edit.add_cell(3*NT*(ix-1)+3*NT-3,      lda*ix+NT-1   , lda*ix+NT-1, lda*ix+NT, lda*(ix-1)+NT-1)
+            # edit.add_cell(3*NT*(ix-1)+3*NT-2,       NT*ix+0   ,    NT*(ix-1)+NT-1, NT*(ix-1)+0)
+            # edit.add_cell(3*NT*(ix-1)+3*NT-1,     NT*ix+0   ,    NT*ix    +NT-1, NT*(ix-1)+NT-1)
+
+        edit.close()
+        
+        vf = File(fname,"ascii")
+        vf << solidmesh
