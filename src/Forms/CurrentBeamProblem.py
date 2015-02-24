@@ -19,7 +19,7 @@ default_properties = {
 
 class CurrentBeamProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
-    def __init__(self,mesh,properties, buildform=True, orientation=0, order=(1,)):
+    def __init__(self,mesh,properties, boundaries=None,buildform=True, orientation=0, order=(1,)):
         if properties.has_key("orientation"):
             orientation = properties["orientation"]
             properties.pop("orientation",None)
@@ -43,7 +43,7 @@ class CurrentBeamProblem(ProblemDescription):
         self.orientation = orientation
         self.order = order
         
-        ProblemDescription.__init__(self,mesh,p,False)
+        ProblemDescription.__init__(self,mesh,p,boundaries,False)
         
         if not properties.has_key("X0"):
             X0 = Function(self.spaces['V'])

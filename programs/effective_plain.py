@@ -24,7 +24,7 @@ outputcnt = 0
 def output():
     global outputcnt
     warp.output_states("post/RVE/yarn_{0}_"+str(outputcnt)+".pvd",1)
-    warp.output_surfaces("post/RVE/mesh_{0}_"+str(outputcnt)+".pvd",1)
+    warp.output_solids("post/RVE/mesh_{0}_"+str(outputcnt)+".pvd",1)
     outputcnt+=1
 
 
@@ -95,7 +95,7 @@ def dynamic_steps():
         if t%1==0:
             warp.create_contacts(cutoff=0.5)
         dirk.march()
-        output()
+        # output()
 
 ground = Constant(0.0)
 bound_1 = CompiledSubDomain("near(x[0],s) && x[1] < 0.0 && on_boundary",s=-2.0)
@@ -121,7 +121,7 @@ def solve_em():
         warp.update()
         print "  ",itcnt," Norm:", eps
         itcnt += 1
-        output()
+        # output()
         
 def static_solve():
     DelW = MultiMeshFunction(warp.spaces['W'])
@@ -139,7 +139,7 @@ def static_solve():
         warp.update()
         print "  ",itcnt," Norm:", eps
         itcnt += 1
-        output()
+        # output()
 
 NITER = 20
 probes = [np.zeros((NITER,3)),np.zeros((NITER,3)),np.zeros((NITER))]
@@ -149,8 +149,9 @@ for i in xrange(NITER):
     init_freeze()
     dynamic_steps()
     init_freeze()
-    solve_em()
+    # solve_em()
     # static_solve()
+    output()
     tx,ty,I= integrate_f()
     probes[0][i,:] = tx[:]
     probes[1][i,:] = ty[:]
