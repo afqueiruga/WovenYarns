@@ -295,5 +295,6 @@ class DecoupledProblem(ProblemDescription):
         return {
                 'q':q, 'h1':h1, 'h2':h2,
                 'vq':vq, 'vh1':vh1, 'vh2':vh2,
-                'g1':g1, 'g2':g2
+                'g1':g1, 'g2':g2,
+                'T':self.fields['T'], 'Vol':self.fields['Vol']
             }

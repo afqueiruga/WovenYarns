@@ -57,7 +57,7 @@ class Fibril():
             cent = qN[:,ix]+coords[ix]
             g1c = g1N[:,ix]
             g2c = g2N[:,ix]
-            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)):
+            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)): # This is a bug!
                 edit.add_vertex(NT*ix+jt,
                                 np.array(cent+np.cos(theta)*g1c+np.sin(theta)*g2c,
                                          dtype=np.float_))
@@ -95,7 +95,7 @@ class Fibril():
             cent = qN[:,ix]+coords[ix]
             g1c = g1N[:,ix]
             g2c = g2N[:,ix]
-            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)):
+            for jt,theta in enumerate(np.linspace(0.0,2.0*np.pi,NT)): # This is a bug!
                 edit.add_vertex(lda*ix+jt,
                                 np.array(cent+np.cos(theta)*g1c+np.sin(theta)*g2c,
                                          dtype=np.float_))
@@ -112,6 +112,29 @@ class Fibril():
             # edit.add_cell(3*NT*(ix-1)+3*NT-1,     NT*ix+0   ,    NT*ix    +NT-1, NT*(ix-1)+NT-1)
 
         edit.close()
+        from IPython import embed
+
+
+        MS = FunctionSpace(solidmesh,"CG",1)
+        MV = VectorFunctionSpace(solidmesh,"CG",1)
+        v2dS = cpp.fem.vertex_to_dof_map(MS)
+        v2dV = cpp.fem.vertex_to_dof_map(MV)
+        newlist = []
+        for n,f in fields.iteritems():
+            F = Function(MS if f.rank()==0 else MV)
+            v2d = v2dS if f.rank()==0 else v2dV
+            fN = f.compute_vertex_values()
+            if f.rank()==1:
+                fN = fN.reshape([3,fN.shape[0]/3])
+            for ix in xrange(qN.shape[1]):
+                for j in xrange(lda):
+                    if f.rank()==0:
+                        F.vector()[v2d[lda*ix+j]] = fN[ix]
+                    else:
+                        F.vector()[v2d[3*(lda*ix+j):3*(lda*ix+j+1)]] = np.array(fN[:,ix])
+            F.rename(n,"field")
+            newlist.append(F)
         
-        vf = File(fname,"ascii")
-        vf << solidmesh
+        from multiwriter.multiwriter import VTKAppender
+        vfile = VTKAppender(fname,"ascii")
+        vfile.write(i,newlist, [])
