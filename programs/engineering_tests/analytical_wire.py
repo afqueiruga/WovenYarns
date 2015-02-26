@@ -18,7 +18,7 @@ endpts = [ [-L,0.0,0.0],[L,0.0,0.0] ]
 E = 10.0
 nu = 0.0
 B = 1.0
-J = 1.0
+J = 1.0 # DECREASE....
 radius = 0.02
 
 k = J*B/(E) # Using current density
@@ -44,7 +44,7 @@ print sol(-L)
 print sol(L)
 print truesol
 print omega/(omega-k)
-
+exit()
 def solveit(Nelem,p, Rad):
    
     

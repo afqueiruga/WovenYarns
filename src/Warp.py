@@ -21,9 +21,10 @@ class Warp():
 
         # Initialize all of the fibrils
         for e,p,ne in zip(endpts, props,Nelems):
-            prop = defprops.update(p)
+            prop = defprops.copy()
+            prop.update(p)
 
-            fib = Fibril(e,ne,p,Prob, order=order)
+            fib = Fibril(e,ne,prop,Prob, order=order)
 
             self.fibrils.append(fib)
             self.CMM.add(fib.mesh)

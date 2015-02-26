@@ -11,7 +11,7 @@ sheet = (2, 2.0,2.0, 2, 2.0,2.0,
 endpts = Geometries.PlainWeaveFibrils_endpts(*sheet)
 defaults = { 'radius':0.2,
              'em_B':Constant((0.0,0.0,0.0)),
-             'dissipation':-2.0e1,
+             'dissipation'2.0e1,
              'mech_bc_trac_0':Constant((0.0,0.0,0.0))}
 props = [ {} for i in endpts ]
 Nelems = [ 20 for i in endpts ]
