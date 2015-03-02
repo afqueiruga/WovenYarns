@@ -7,6 +7,14 @@ from Warp import Warp
 Define routines for initializing textile geometries.
 """
 
+class TextileGeometry():
+    def __init__(self):
+        pass
+    def endpts(self,warp,istart):
+        return []
+    def contact_pairs(self,istart):
+        return None
+
 def PlainWeave_endpts(NX,restX,setX, NY,restY,setY, zpos,height):
     endpts = []
     for i in xrange(NX):
@@ -75,7 +83,6 @@ def PlainWeaveFibrils_endpts(NX,restX,setX, NY,restY,setY, zpos,height, pattern,
         endpts.extend( PackedYarn([ [ p, -restY, zpos],[p, restY,zpos] ], pattern,Dia))
     return endpts
 
-
 def PlainWeaveFibrils_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpos,height, pattern,Dia):
     for i in xrange(istart,istart+NX):
         for j in xrange(np.sum(pattern)):
@@ -118,6 +125,8 @@ def PlainWeaveFibrils_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpo
             fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
                                                              "0.0"," 0.0","0.0",
                                                              "0.0","0.0","0.0")))
+
+
 
 
 def PackedYarn(centers, pattern,  Dia):
