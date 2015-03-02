@@ -18,7 +18,7 @@ endpts = [ [-L,0.0,0.0],[L,0.0,0.0] ]
 E = 10.0
 nu = 0.0
 B = 1.0
-J = 1.0 # DECREASE....
+J = 0.1 # DECREASE....
 radius = 0.02
 
 k = J*B/(E) # Using current density
@@ -44,7 +44,7 @@ print sol(-L)
 print sol(L)
 print truesol
 print omega/(omega-k)
-exit()
+
 def solveit(Nelem,p, Rad):
    
     
@@ -108,7 +108,7 @@ sq=0.0,A1=0.8,p=0.5*np.pi/L))
         #     bcmove.apply(K,R)
 
     # Do a bit of dynamic relaxation first
-    NT = 25
+    NT = 100
     h = Tmax/NT
     dirk = DIRK_Monolithic(h,LDIRK[1], sys, lambda : None,apply_BCs,
                        fib.problem.fields['wx'].vector(),fib.problem.fields['wv'].vector(),
@@ -149,19 +149,19 @@ sq=0.0,A1=0.8,p=0.5*np.pi/L))
     # fib.WriteSurface("post/wire_mesh_done_"+str(Rad)+".pvd")
     return weval[2]
 
-RADS = np.linspace(0.02,0.2,10) #[ 0.02, 0.01, 0.005 ] #, 0.001 ] #, 0.0001, 0.00001 ]
+RADS = [0.02] #np.linspace(0.02,0.2,10) #[ 0.02, 0.01, 0.005 ] #, 0.001 ] #, 0.0001, 0.00001 ]
 Nelems = [[ 50 ]]
 
 ps = [ 2 ] 
 points = []
-# points = [map(lambda x:solveit(40,2, x),RADS)]
+points = [map(lambda x:solveit(40,2, x),RADS)]
 
 # for NS,p in zip(Nelems,ps):
 #     points.append( map(lambda x:solveit(x,p,radius),NS) )
 #     print points
 # print points
 
-# embed()
+embed()
 
 
 #

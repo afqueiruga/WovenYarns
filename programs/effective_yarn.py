@@ -10,7 +10,7 @@ Compute the effective properties of a single yarn
 # endpts.append([[-3.0,0.0,0.0],[3.0,0.0,0.0]])
 
 
-yarn = ([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.1, 1.1, [4,5],[0.11,0.11],[3,3,3])
+yarn = ([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.0, 1.1, [1,6,3,4],[0.11,0.11,0.11,0.11],[1,1,3,3,3])
 
 endpts = Geometries.CoiledYarn_endpts(*yarn)
 
@@ -65,7 +65,10 @@ def apply_BCs(K,R,t,hold=False):
 def sys(time):
     return warp.assemble_forms(['F','AX','AV'],'W')
 
+zeroS = Constant(0.0)
+zeroW = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 
+em_bc = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
 
 output()
 warp.create_contacts(cutoff=0.25)
@@ -74,8 +77,8 @@ warp.pull_fibril_fields()
 # init_stretch()
 output()
 
-Tmax=0.2
-NT = 10
+Tmax=0.1
+NT = 5
 h = Tmax/NT
 dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
@@ -84,11 +87,34 @@ dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
 
 def dynamic_steps(NT):
     for t in xrange(NT):
-        if t%1==0:
+        if t%3==0:
             warp.create_contacts(cutoff=0.3)
         dirk.march()
-        output()
+        # output()
 
+
+def solve_em():
+    print "Solving EM..."
+    # Reset the potentials
+    for fib in warp.fibrils:
+        fib.problem.fields['Vol'].interpolate(Expression("A*x[0]+B",A=0.5/yarn[2],B=0.5))
+    warp.pull_fibril_fields()
+    DelV = MultiMeshFunction(warp.spaces['S'])
+    eps = 1.0
+    tol = 1.0e-11
+    maxiter = 20
+    itcnt = 0
+    while eps>tol and itcnt < maxiter:
+        warp.create_contacts(cutoff=0.5)
+        R,AE = warp.assemble_forms(['FE','AE'],'S')
+        em_bc.apply(AE,R)
+        # bcground.apply(AE,R)
+        solve(AE,DelV.vector(),R)
+        warp.fields['Vol'].vector()[:] -= DelV.vector()[:]
+        eps=np.linalg.norm(DelV.vector().array(), ord=np.Inf)
+        warp.update()
+        print "  ",itcnt," Norm:", eps
+        itcnt += 1
 
 def integrate_f():
     tx = np.zeros(3)
@@ -107,25 +133,32 @@ def integrate_f():
     return tx,ty,I
 
 
+
 NITER = 5
 probes = [np.zeros((NITER+1,3)),np.zeros((NITER+1,3)),np.zeros((NITER+1))]
-
+sample_num = 0
+def record_samples():
+    global sample_num
+    init_freeze()
+    solve_em()
+    output()
+    tx,ty,I= integrate_f()
+    probes[0][sample_num,:] = tx[:]
+    probes[1][sample_num,:] = ty[:]
+    probes[2][sample_num] = I
+    sample_num += 1
+solve_em()
 init_freeze()
 dynamic_steps(NT)
-tx,ty,I= integrate_f()
-probes[0][0,:] = tx[:]
-probes[1][0,:] = ty[:]
-probes[2][0] = I
+
+record_samples()
+
 for it in xrange(NITER):
     init_stretch()
     dynamic_steps(NT)
     init_freeze()
     dynamic_steps(NT)
-    init_freeze()
-    tx,ty,I= integrate_f()
-    probes[0][it+1,:] = tx[:]
-    probes[1][it+1,:] = ty[:]
-    probes[2][it+1] = I
+    record_samples()
     
 from matplotlib import pylab as plt
 plt.plot(probes[0],'-+')

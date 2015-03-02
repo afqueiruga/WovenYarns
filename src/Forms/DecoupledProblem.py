@@ -16,6 +16,7 @@ default_properties = {
     'f_dens_ext':Constant((0.0,0.0,0.0)),
     'dissipation':1.0e-1,
     'contact_penalty': 4.0,
+    'contact_em': 1.0,
     'mech_bc_trac_0': Constant((0.0,0.0,0.0)),
     'mech_bc_trac_1': Constant((0.0,0.0,0.0)),
     'em_bc_J_0': 0.0,
@@ -131,6 +132,8 @@ class DecoupledProblem(ProblemDescription):
         dissipation = PROP['dissipation']
 
         contact_penalty = PROP['contact_penalty']
+        contact_em = PROP['contact_em']
+
         
         # Neumann BC values
         em_bc_J_0 = PROP['em_bc_J_0']
@@ -164,6 +167,9 @@ class DecoupledProblem(ProblemDescription):
         p_t2_1 = None
         p_J_0 = None
         p_J_1 = None
+
+        f_I = None
+        
         GPS2D = CircCart2D[4]
         J0 = radius*radius
         for z1,z2,weight in GPS2D:
@@ -223,6 +229,8 @@ class DecoupledProblem(ProblemDescription):
 
             p_J_0_Loc = -weight*J0*dot(Ez,em_J)*ds(0)
             p_J_1_Loc =  weight*J0*dot(Ez,em_J)*ds(1)
+
+            f_I_Loc = weight*J0*em_J
             
             # Finalize
             FMechLoc = weight*J0*( FInt + FExt ) * dx
@@ -245,6 +253,8 @@ class DecoupledProblem(ProblemDescription):
             p_t2_1 = p_t2_1_Loc if p_t2_1 is None else p_t2_1 + p_t2_1_Loc
             p_J_0 = p_J_0_Loc if p_J_0 is None else p_J_0 + p_J_0_Loc
             p_J_1 = p_J_1_Loc if p_J_1 is None else p_J_1 + p_J_1_Loc
+
+            f_I = f_I_Loc if f_I is None else f_I + f_I_Loc
             
         # Contact Forms
         xr = X0 + q
@@ -253,9 +263,16 @@ class DecoupledProblem(ProblemDescription):
         ContactForm = -dot(jump(tvq),
                         conditional(ge(overlap,0.0), -contact_penalty*overlap,0.0)*jump(xr)/dist) \
                         *dc(0, metadata={"num_cells": 2,"special":"contact"})
-        
-        # Functional derivatives
+
+        VoltageContact = -dot(
+            jump(tVol),
+            conditional(ge(overlap,0.0), -contact_em,0.0)*jump(Vol)
+            )*dc(0,metadata={"num_cells": 2,"special":"contact"})
+
         FMechTot += ContactForm
+        FElecTot += VoltageContact
+        # Functional derivatives
+        
         AX = derivative(FMechTot,wx,Delw)
         AV = derivative(FMechTot,wv,Delw)
         AT = derivative(FTherTot,T,DelT)
@@ -281,7 +298,9 @@ class DecoupledProblem(ProblemDescription):
             'p_t1_1':Form(p_t1_1),
             'p_t2_1':Form(p_t2_1),
             'p_J,0':Form(p_J_0),
-            'p_J_1':Form(p_J_1)
+            'p_J_1':Form(p_J_1),
+
+            'f_I':f_I
             }
 
     def split_for_io(self):
@@ -291,10 +310,14 @@ class DecoupledProblem(ProblemDescription):
         g1 = project(self.properties['radius']*(self.properties['E1']+h1),
                      self.spaces['V'])
         g2 = project(self.properties['radius']*(self.properties['E2']+h2),
-                     self.spaces['V'])     
+                     self.spaces['V'])
+
+        I = project(self.forms['f_I'], self.spaces['V'])
+        
         return {
                 'q':q, 'h1':h1, 'h2':h2,
                 'vq':vq, 'vh1':vh1, 'vh2':vh2,
                 'g1':g1, 'g2':g2,
-                'T':self.fields['T'], 'Vol':self.fields['Vol']
+                'T':self.fields['T'], 'Vol':self.fields['Vol'],
+                'I':I
             }
