@@ -15,78 +15,33 @@ class TextileGeometry():
     def contact_pairs(self,istart):
         return None
 
-def PlainWeave_endpts(NX,restX,setX, NY,restY,setY, zpos,height):
-    endpts = []
-    for i in xrange(NX):
-        Wp = setY - setY/(NX-1.0)
-        p = 2.0*Wp/(NX-1.0)*i - Wp
-        endpts.append([ [-restX, p,zpos],[ restX, p,zpos] ])
-    for i in xrange(NY):
-        Wp = setX - setX/(NY-1.0)
-        p = 2.0*Wp/(NY-1.0)*i -Wp
-        endpts.append([ [ p, -restY, zpos],[p, restY,zpos] ])
-    return endpts
+class PlainWeave(TextileGeometry):
+    def __init__(self, NX,restX,setX, NY,restY,setY, zpos,height):
+        self.NX = NX
+        self.restX = restX
+        self.setX = setX
+        self.NY = NY
+        self.restY = restY
+        self.setY = setY
 
-def PlainWeave_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpos,height):
-    for i in xrange(istart,istart+NX):
-        fib = warp.fibrils[i]
-        fib.problem.fields['wx'].interpolate(Expression((
-            " x[0]*sq",
-            "0",
-            "A1*sin(x[0]*p)",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0"),
-            sq = -(restX-setX)/restX,
-            p=np.pi/restX *(NY)/2.0,
-            A1=(-1.0 if i%2==0 else 1.0)*height
-            ))
-        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0")))
-    for i in xrange(istart+NX,istart+NX+NY):
-        fib = warp.fibrils[i]
-        fib.problem.fields['wx'].interpolate(Expression((
-            "0",
-            " x[1]*sq",
-            "A1*sin(x[1]*p)",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0"),
-            sq = -(restY-setY)/restY,
-            p=np.pi/restY *(NX)/2.0,
-            A1=(-1.0 if i%2==1 else 1.0)*height
-            ))
-        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0")))
+        self.zpos = zpos
+        self.height = height
 
+    def endpts(self):
+        endpts = []
+        for i in xrange(self.NX):
+            Wp = self.setY - self.setY/(self.NX-1.0)
+            p = 2.0*Wp/(self.NX-1.0)*i - Wp
+            endpts.append([ [-self.restX, p,self.zpos],[ self.restX, p,self.zpos] ])
+        for i in xrange(self.NY):
+            Wp = self.setX - self.setX/(self.NY-1.0)
+            p = 2.0*Wp/(self.NY-1.0)*i -Wp
+            endpts.append([ [ p, -self.restY, self.zpos],[p, self.restY,self.zpos] ])
+        return endpts
 
-
-
-
-
-
-def PlainWeaveFibrils_endpts(NX,restX,setX, NY,restY,setY, zpos,height, pattern,Dia):
-    endpts = []
-    for i in xrange(NX):
-        p = -setY + 2.0*setY/(NX)*(i+0.5)
-        endpts.extend( PackedYarn([ [-restX, p,zpos],[ restX, p,zpos] ], pattern,Dia) )
-    for i in xrange(NY):
-        p = -setX + 2.0*setX/(NY)*(i+0.5)
-        endpts.extend( PackedYarn([ [ p, -restY, zpos],[p, restY,zpos] ], pattern,Dia))
-    return endpts
-
-def PlainWeaveFibrils_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpos,height, pattern,Dia):
-    for i in xrange(istart,istart+NX):
-        for j in xrange(np.sum(pattern)):
-            fib = warp.fibrils[i*np.sum(pattern)+j]
+    def initialize(self, warp, istart):
+        for i in xrange(istart,istart+self.NX):
+            fib = warp.fibrils[i]
             fib.problem.fields['wx'].interpolate(Expression((
                 " x[0]*sq",
                 "0",
@@ -97,17 +52,15 @@ def PlainWeaveFibrils_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpo
                 "0",
                 "0",
                 "0"),
-                sq = -(restX-setX)/restX,
-                p=np.pi/restX *(NY)/2.0,
-                A1=(-1.0 if i%2==0 else 1.0)*height
+                sq = -(self.restX-self.setX)/self.restX,
+                p=np.pi/self.restX *(self.NY)/2.0,
+                A1=(-1.0 if i%2==0 else 1.0)*self.height
                 ))
             fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
                                                              "0.0"," 0.0","0.0",
                                                              "0.0","0.0","0.0")))
-    for i in xrange(istart+NX,istart+(NX+NY)):
-        for j in xrange(np.sum(pattern)):
-
-            fib = warp.fibrils[i*np.sum(pattern)+j]
+        for i in xrange(istart+self.NX,istart+self.NX+self.NY):
+            fib = warp.fibrils[i]
             fib.problem.fields['wx'].interpolate(Expression((
                 "0",
                 " x[1]*sq",
@@ -118,17 +71,107 @@ def PlainWeaveFibrils_initialize(warp, istart, NX,restX,setX, NY,restY,setY, zpo
                 "0",
                 "0",
                 "0"),
-                sq = -(restY-setY)/restY,
-                p=np.pi/restY *(NX)/2.0,
-                A1=(-1.0 if i%2==1 else 1.0)*height
+                sq = -(self.restY-self.setY)/self.restY,
+                p=np.pi/self.restY *(self.NX)/2.0,
+                A1=(-1.0 if i%2==1 else 1.0)*self.height
                 ))
             fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
                                                              "0.0"," 0.0","0.0",
                                                              "0.0","0.0","0.0")))
+    def contact_pairs(self,istart):
+        pairs = []
+        for A in xrange(self.NX):
+            for B in xrange(self.NY):
+                pairs.append((istart+A,istart+self.NX+B))
+        return pairs
 
 
+class PlainWeaveFibrils(TextileGeometry):
+    def __init__(self, NX,restX,setX, NY,restY,setY, zpos,height, pattern,Dia):
+        self.NX = NX
+        self.restX = restX
+        self.setX = setX
+        self.NY = NY
+        self.restY = restY
+        self.setY = setY
 
+        self.zpos = zpos
+        self.height = height
 
+        self.pattern = pattern
+        self.Dia = Dia
+
+    def endpts(self):
+        endpts = []
+        for i in xrange(self.NX):
+            p = -self.setY + 2.0*self.setY/(self.NX)*(i+0.5)
+            endpts.extend( PackedYarn([ [-self.restX, p,self.zpos],[ self.restX, p,self.zpos] ],
+                                      self.pattern,self.Dia) )
+        for i in xrange(self.NY):
+            p = -self.setX + 2.0*self.setX/(self.NY)*(i+0.5)
+            endpts.extend( PackedYarn([ [ p, -self.restY, self.zpos],[p, self.restY,self.zpos] ],
+                                      self.pattern,self.Dia))
+        return endpts
+    
+    def initialize(self,warp,istart):
+        for i in xrange(istart,istart+self.NX):
+            for j in xrange(np.sum(self.pattern)):
+                fib = warp.fibrils[i*np.sum(self.pattern)+j]
+                fib.problem.fields['wx'].interpolate(Expression((
+                    " x[0]*sq",
+                    "0",
+                    "A1*sin(x[0]*p)",
+                    "0",
+                    "0",
+                    "0",
+                    "0",
+                    "0",
+                    "0"),
+                    sq = -(self.restX-self.setX)/self.restX,
+                    p=np.pi/self.restX *(self.NY)/2.0,
+                    A1=(-1.0 if i%2==0 else 1.0)*self.height
+                    ))
+                fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
+                                                                 "0.0"," 0.0","0.0",
+                                                                 "0.0","0.0","0.0")))
+        for i in xrange(istart+self.NX,istart+(self.NX+self.NY)):
+            for j in xrange(np.sum(self.pattern)):
+                            
+                fib = warp.fibrils[i*np.sum(self.pattern)+j]
+                fib.problem.fields['wx'].interpolate(Expression((
+                    "0",
+                    " x[1]*sq",
+                    "A1*sin(x[1]*p)",
+                    "0",
+                    "0",
+                    "0",
+                    "0",
+                    "0",
+                    "0"),
+                    sq = -(self.restY-self.setY)/self.restY,
+                    p=np.pi/self.restY *(self.NX)/2.0,
+                    A1=(-1.0 if i%2==1 else 1.0)*self.height
+                    ))
+                fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
+                                                                 "0.0"," 0.0","0.0",
+                                                                 "0.0","0.0","0.0")))
+                
+                        
+    def contact_pairs(self,istart):
+        lenp = np.sum(self.pattern)
+        pairs = []
+        for A in xrange(self.NX):
+            stA = istart+lenp*A
+            pairs.extend([ (stA+j,stA+i) for j in xrange(lenp) for i in xrange(j+1,lenp)  ])
+            for B in xrange(self.NY):
+                stB = istart+self.NX+lenp*B
+                pairs.extend([ (stA+j,stB+i) for j in xrange(lenp) for i in xrange(lenp)  ])
+        for B in xrange(self.NY):
+            stB = istart+self.NX+lenp*B
+            pairs.extend([ (stB+j,stB+i) for j in xrange(lenp) for i in xrange(j+1,lenp)  ])
+            
+        return pairs
+        
 def PackedYarn(centers, pattern,  Dia):
     
     centers[0] = np.array(centers[0])
