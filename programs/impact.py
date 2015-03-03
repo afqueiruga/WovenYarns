@@ -30,10 +30,10 @@ defaults = { 'mu':E/(2*(1 + nu)),
              'radius':0.2,
              'em_B':Constant((0.0,0.0,0.0)),
              'contact_penalty':50.0,
-             'dissipation':0.0
+             'dissipation':0.01
              }
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':2.0 }
+props[-1] = { 'radius':2.0, 'dissipation':0.0 }
 Nelems = [ 20 for i in endpts ]
 Nelems[-1] = 1
 
@@ -58,7 +58,7 @@ fib =  warp.fibrils[-1]
 fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
-fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-10.0",
+fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-30.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
 warp.pull_fibril_fields()
@@ -68,8 +68,9 @@ output()
 
 cpairs = []
 for s in sheets:
-    cpairs.extend(s.contact_pairs)
-warp.create_contacts(cutoff=3.0)
+    cpairs.extend(s.contact_pairs())
+cpairs.extend((i,len(endpts)-1) for i in xrange(len(endpts)-1))
+warp.create_contacts(pairs=cpairs,cutoff=3.0)
 
 Tmax=1.0
 NT = 200
@@ -93,7 +94,7 @@ dirk = DIRK_Monolithic(h,LDIRK[2], sys,warp.update,apply_BCs,
 warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
     if t%1==0:
-        warp.create_contacts(cutoff=3.0)
+        warp.create_contacts(pairs=cpairs,cutoff=3.0)
     dirk.march()
     if t%1==0:
         output()

@@ -6,12 +6,12 @@ from IPython import embed
 Compute the effective properties of a textile square
 """
 
-sheet = (2, 2.0,2.0, 2, 2.0,2.0, 
-         0.0,0.35*1.5, [3,4], 0.35)
-endpts = Geometries.PlainWeaveFibrils_endpts(*sheet)
-defaults = { 'radius':0.2,
+sheet = Geometries.PlainWeaveFibrils(2, 2.0,2.0, 2, 2.0,2.0, 
+         0.0,0.35*1.5, [3,4], 0.31)
+endpts = sheet.endpts()
+defaults = { 'radius':0.15,
              'em_B':Constant((0.0,0.0,0.0)),
-             'dissipation'2.0e1,
+             'dissipation':2.0e1,
              'mech_bc_trac_0':Constant((0.0,0.0,0.0))}
 props = [ {} for i in endpts ]
 Nelems = [ 20 for i in endpts ]
@@ -30,7 +30,7 @@ def output():
 
 output()
 
-Geometries.PlainWeaveFibrils_initialize(warp,0, *sheet)
+sheet.initialize(warp,0)
 
 def init_skew():
     for fib in warp.fibrils:
@@ -46,12 +46,13 @@ def init_freeze():
     warp.pull_fibril_fields()
 output()
 
-warp.create_contacts(cutoff=0.5)
+cpairs = sheet.contact_pairs()
+warp.create_contacts(cpairs,cutoff=0.5)
 
 
 
 Tmax=0.5
-NT = 5
+NT = 10
 h = Tmax/NT
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
@@ -69,7 +70,7 @@ def integrate_f():
     tx = np.zeros(3)
     ty = np.zeros(3)
     I = 0.0
-    NDIR = sheet[0]*np.sum(sheet[8])
+    NDIR = sheet.NX*np.sum(sheet.pattern)
     for fib in warp.fibrils[:NDIR]:
         tx[0] += assemble(fib.problem.forms['p_t0_1'])
         tx[1] += assemble(fib.problem.forms['p_t1_1'])
@@ -78,7 +79,7 @@ def integrate_f():
         ty[0] += assemble(fib.problem.forms['p_t0_1'])
         ty[1] += assemble(fib.problem.forms['p_t1_1'])
         ty[2] += assemble(fib.problem.forms['p_t2_1'])
-    for fib in warp.fibrils[NDIR/2:]:
+    for fib in warp.fibrils[:NDIR/2]:
         I += assemble(fib.problem.forms['p_J_1'])
     return tx,ty,I
         
@@ -90,21 +91,29 @@ dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.assemble_form('M','W'))
 # warp.CG.OutputFile("post/RVE/gammaC.pvd" )
 
-def dynamic_steps():
+def dynamic_steps(NT):
     for t in xrange(NT):
-        if t%1==0:
+        if t%3==0:
             warp.create_contacts(cutoff=0.5)
         dirk.march()
         # output()
 
 ground = Constant(0.0)
+zeroS = Constant(0.0)
 bound_1 = CompiledSubDomain("near(x[0],s) && x[1] < 0.0 && on_boundary",s=-2.0)
 testvol = Constant(1.0)
-bound_2 = CompiledSubDomain("near(x[0],s) && x[1] < 0.0 && on_boundary",s= 2.0)
+bound_2 = CompiledSubDomain("(near(x[0],s) || near(x[0],-s) ) && x[1] < 0.0 && on_boundary",s= 2.0)
 bcground = MultiMeshDirichletBC(warp.spaces['S'], ground, bound_1)
 bctest = MultiMeshDirichletBC(warp.spaces['S'], testvol, bound_2)
 
+em_bc = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound_2)
+
 def solve_em():
+    print "Solving EM..."
+    # Reset the potentials
+    for fib in warp.fibrils:
+        fib.problem.fields['Vol'].interpolate(Expression("A*x[0]+B",A=0.5/sheet.restX,B=0.5))
+    warp.pull_fibril_fields()
     DelV = MultiMeshFunction(warp.spaces['S'])
     eps = 1.0
     tol = 1.0e-11
@@ -113,15 +122,14 @@ def solve_em():
     while eps>tol and itcnt < maxiter:
         warp.create_contacts(cutoff=0.5)
         R,AE = warp.assemble_forms(['FE','AE'],'S')
-        bctest.apply(AE,R)
-        bcground.apply(AE,R)
+        em_bc.apply(AE,R)
+        # bcground.apply(AE,R)
         solve(AE,DelV.vector(),R)
         warp.fields['Vol'].vector()[:] -= DelV.vector()[:]
         eps=np.linalg.norm(DelV.vector().array(), ord=np.Inf)
         warp.update()
         print "  ",itcnt," Norm:", eps
         itcnt += 1
-        # output()
         
 def static_solve():
     DelW = MultiMeshFunction(warp.spaces['W'])
@@ -141,21 +149,33 @@ def static_solve():
         itcnt += 1
         # output()
 
-NITER = 20
+# embed()
+NITER = 5
 probes = [np.zeros((NITER,3)),np.zeros((NITER,3)),np.zeros((NITER))]
-for i in xrange(NITER):
-    init_skew()
-    dynamic_steps()
+sample_num = 0
+def record_samples():
+    global sample_num
     init_freeze()
-    dynamic_steps()
-    init_freeze()
-    # solve_em()
-    # static_solve()
+    solve_em()
     output()
     tx,ty,I= integrate_f()
-    probes[0][i,:] = tx[:]
-    probes[1][i,:] = ty[:]
-    probes[2][i] = I
+    probes[0][sample_num,:] = tx[:]
+    probes[1][sample_num,:] = ty[:]
+    probes[2][sample_num] = I
+    sample_num += 1
+
+init_freeze()
+dynamic_steps(NT)
+record_samples()
+
+
+for i in xrange(NITER):
+    init_skew()
+    dynamic_steps(NT)
+    init_freeze()
+    dynamic_steps(NT)
+    record_samples()
+    output()
 
 from matplotlib import pylab as plt
 plt.plot(probes[0],'-+')
