@@ -9,7 +9,8 @@ Define routines for initializing textile geometries.
 
 class TextileGeometry():
     def __init__(self):
-        pass
+        self.nfibril = 0
+        self.istart = 0
     def endpts(self,warp,istart):
         return []
     def contact_pairs(self,istart):
@@ -27,6 +28,8 @@ class PlainWeave(TextileGeometry):
         self.zpos = zpos
         self.height = height
 
+        self.nfibril = NX+NY
+        self.istart = 0
     def endpts(self):
         endpts = []
         for i in xrange(self.NX):
@@ -40,6 +43,7 @@ class PlainWeave(TextileGeometry):
         return endpts
 
     def initialize(self, warp, istart):
+        self.istart = istart
         for i in xrange(istart,istart+self.NX):
             fib = warp.fibrils[i]
             fib.problem.fields['wx'].interpolate(Expression((
@@ -78,11 +82,11 @@ class PlainWeave(TextileGeometry):
             fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
                                                              "0.0"," 0.0","0.0",
                                                              "0.0","0.0","0.0")))
-    def contact_pairs(self,istart):
+    def contact_pairs(self):
         pairs = []
         for A in xrange(self.NX):
             for B in xrange(self.NY):
-                pairs.append((istart+A,istart+self.NX+B))
+                pairs.append((self.istart+A,self.istart+self.NX+B))
         return pairs
 
 
@@ -101,6 +105,8 @@ class PlainWeaveFibrils(TextileGeometry):
         self.pattern = pattern
         self.Dia = Dia
 
+        self.nfibril = (NX+NY)*np.sum(pattern)
+        self.istart = 0
     def endpts(self):
         endpts = []
         for i in xrange(self.NX):
@@ -114,6 +120,7 @@ class PlainWeaveFibrils(TextileGeometry):
         return endpts
     
     def initialize(self,warp,istart):
+        self.istart = istart
         for i in xrange(istart,istart+self.NX):
             for j in xrange(np.sum(self.pattern)):
                 fib = warp.fibrils[i*np.sum(self.pattern)+j]
@@ -157,17 +164,17 @@ class PlainWeaveFibrils(TextileGeometry):
                                                                  "0.0","0.0","0.0")))
                 
                         
-    def contact_pairs(self,istart):
+    def contact_pairs(self):
         lenp = np.sum(self.pattern)
         pairs = []
         for A in xrange(self.NX):
-            stA = istart+lenp*A
+            stA = self.istart+lenp*A
             pairs.extend([ (stA+j,stA+i) for j in xrange(lenp) for i in xrange(j+1,lenp)  ])
             for B in xrange(self.NY):
-                stB = istart+self.NX+lenp*B
+                stB = self.istart+self.NX+lenp*B
                 pairs.extend([ (stA+j,stB+i) for j in xrange(lenp) for i in xrange(lenp)  ])
         for B in xrange(self.NY):
-            stB = istart+self.NX+lenp*B
+            stB = self.istart+self.NX+lenp*B
             pairs.extend([ (stB+j,stB+i) for j in xrange(lenp) for i in xrange(j+1,lenp)  ])
             
         return pairs

@@ -14,9 +14,12 @@ endpts = []
 #     endpts.extend(  Geometries.PlainWeave_endpts(*z) )
 
 # fibril level
-sheets = [ (8,10.0,10.0, 8,10.0,10.0, 0.0,0.25, [ 3 ],0.41) ]
-for z in sheets:
-    endpts.extend( Geometries.PlainWeaveFibrils_endpts(*z) )
+
+sheets = [
+    Geometries.PlainWeaveFibrils(8,10.0,10.0, 8,10.0,10.0, 0.0,0.25, [ 3 ],0.41)
+    ]
+for s in sheets:
+    endpts.extend( s.endpts() )
 endpts.append([ [0, 0, 3.2],[ 0, 0, 2.9] ])
 
 E = 1.26 #MPa
@@ -36,8 +39,6 @@ Nelems[-1] = 1
 
 warp = Warp(endpts,props,defaults, Nelems, DecoupledProblem)
 
-
-
 outputcnt = 0
 def output():
     global outputcnt
@@ -48,10 +49,9 @@ def output():
 output()
 
 istart=0
-for z in sheets:
-    # Geometries.PlainWeave_initialize(warp, istart, *z)
-    Geometries.PlainWeaveFibrils_initialize(warp,istart, *z)
-    istart += z[0]+z[3]
+for s in sheets:
+    s.initialize(warp,istart)
+    istart += s.nfibril
 
     
 fib =  warp.fibrils[-1]
@@ -66,6 +66,9 @@ warp.pull_fibril_fields()
 output()
 
 
+cpairs = []
+for s in sheets:
+    cpairs.extend(s.contact_pairs)
 warp.create_contacts(cutoff=3.0)
 
 Tmax=1.0

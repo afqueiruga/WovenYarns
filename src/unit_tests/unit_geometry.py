@@ -17,4 +17,4 @@ for p in tests:
     p.initialize(warp,0)
 
 
-    print p.contact_pairs(0)
+    print p.contact_pairs()
