@@ -5,115 +5,80 @@ from IPython import embed
 """
 Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
-
-restL = 5.1
-newL = 5.0
-restW = 5.1
-newW = 5.0
-NX = 8
-NY = 8
-
 endpts = []
 
-sheets = [ 0.0,-0.8  ]
-def add_sheet(zh):
-    for i in xrange(NX):
-        Wp = newW - newW/(NX-1.0)
-        p = 2.0*Wp/(NX-1.0)*i - Wp
-        endpts.append([ [-restL, p,zh],[ restL, p,zh] ])
-    for i in xrange(NY):
-        Wp = newL - newL/(NX-1.0)
-        p = 2.0*Wp/(NY-1.0)*i -Wp
-        endpts.append([ [ p, -restW, zh],[p, restW,zh] ])
+# Big plainweave
+# sheets = [ (8,5.2,5.0, 8,5.2,5.0,  0.0,0.2),
+#            (8,5.2,5.0, 8,5.2,5.0, -0.8,0.2) ]
+# for z in sheets:
+#     endpts.extend(  Geometries.PlainWeave_endpts(*z) )
 
-for z in sheets:
-    add_sheet(z)
+# fibril level
+
+sheets = [
+    Geometries.PlainWeaveFibrils(8,10.0,10.0, 8,10.0,10.0, 0.0,0.25, [ 3 ],0.41)
+    ]
+for s in sheets:
+    endpts.extend( s.endpts() )
 endpts.append([ [0, 0, 3.2],[ 0, 0, 2.9] ])
 
-defaults = { 'radius':0.2,
-             'em_B':Constant((0.0,0.0,0.0)) }
+E = 1.26 #MPa
+nu = 0.0
+defaults = { 'mu':E/(2*(1 + nu)),
+             'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
+             'rho':0.00144,
+             'radius':0.2,
+             'em_B':Constant((0.0,0.0,0.0)),
+             'contact_penalty':50.0,
+             'dissipation':0.01
+             }
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':2.0 }
+props[-1] = { 'radius':2.0, 'dissipation':0.0 }
 Nelems = [ 20 for i in endpts ]
 Nelems[-1] = 1
 
-warp = Warp(endpts,props,defaults, Nelems, CurrentBeamProblem)
+warp = Warp(endpts,props,defaults, Nelems, DecoupledProblem)
 
-def initialize_sheet(startX,endX, startY,endY, restL,newL, height):
-    for i in xrange(startX,endX):
-        fib = warp.fibrils[i]
-        fib.problem.fields['wx'].interpolate(Expression((
-            " x[0]*sq",
-            "0",
-            "A1*sin(x[0]*p)",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0"),
-            sq = -(restL-newL)/restL,
-            p=np.pi/restL *(endY-startY)/2.0,
-            A1=(-1.0 if i%2==0 else 1.0)*height
-            ))
-        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0")))
-        mdof = warp.spaces['W'].dofmap()
-        warp.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
-        warp.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
-    for i in xrange(startY,endY):
-        fib = warp.fibrils[i]
-        fib.problem.fields['wx'].interpolate(Expression((
-            "0",
-            " x[1]*sq",
-            "A1*sin(x[1]*p)",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0",
-            "0"),
-            sq = -(restL-newL)/restL,
-            p=np.pi/restL *(endX-startX)/2.0,
-            A1=(-1.0 if i%2==1 else 1.0)*height
-            ))
-        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                       "0.0"," 0.0","0.0",
-                                       "0.0","0.0","0.0")))
-        mdof = warp.spaces['W'].dofmap()
-        warp.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
-        warp.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
+outputcnt = 0
+def output():
+    global outputcnt
+    warp.output_states("post/impact/yarn_{0}_"+str(outputcnt)+".pvd",1)
+    warp.output_solids("post/impact/mesh_{0}_"+str(outputcnt)+".pvd",1)
+    outputcnt+=1
 
-warp.output_states("post/impact/yarn_{0}_"+str(0)+".pvd",0)
-warp.output_surfaces("post/impact/mesh_{0}_"+str(0)+".pvd",0)
+output()
 
-for i in xrange(len(sheets)):
-    base = i*(NX+NY)
-    initialize_sheet(base,base+NX,base+NX,base+NX+NY, restL,newL, 0.2)
+istart=0
+for s in sheets:
+    s.initialize(warp,istart)
+    istart += s.nfibril
 
+    
 fib =  warp.fibrils[-1]
 fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
-fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-0.5",
+fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-30.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
-mdof = warp.spaces['W'].dofmap()
-warp.fields['wx'].vector()[ mdof.part(len(warp.fibrils)-1).dofs() ] = fib.problem.fields['wx'].vector()[:]
-warp.fields['wv'].vector()[ mdof.part(len(warp.fibrils)-1).dofs() ] = fib.problem.fields['wv'].vector()[:]
+warp.pull_fibril_fields()
 
-warp.output_states("post/impact/yarn_{0}_"+str(1)+".pvd",0)
-warp.output_surfaces("post/impact/mesh_{0}_"+str(1)+".pvd",0)
+output()
 
-warp.create_contacts(cutoff=2.0)
 
-Tmax=20.0
+cpairs = []
+for s in sheets:
+    cpairs.extend(s.contact_pairs())
+cpairs.extend((i,len(endpts)-1) for i in xrange(len(endpts)-1))
+warp.create_contacts(pairs=cpairs,cutoff=3.0)
+
+Tmax=1.0
 NT = 200
 h = Tmax/NT
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
-bound = CompiledSubDomain("(near(x[0],LENGTH) || near(x[0],-LENGTH) || near(x[1],WIDTH) || near(x[1],-WIDTH) ) && on_boundary",LENGTH=restL,WIDTH=restW)
+bound = CompiledSubDomain("x[2] <= 0.0 && on_boundary")
+# bound = CompiledSubDomain("(near(x[0],LENGTH) || near(x[0],-LENGTH) || near(x[1],WIDTH) || near(x[1],-WIDTH) ) && on_boundary",LENGTH=restL,WIDTH=restW)
 
 subs = MultiMeshSubSpace(warp.spaces['W'],0)
 bcall = MultiMeshDirichletBC(subs, zero, bound)
@@ -123,14 +88,13 @@ def apply_BCs(K,R,t,hold=False):
 def sys(time):
     return warp.assemble_forms(['F','AX','AV'],'W')
 
-dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
+dirk = DIRK_Monolithic(h,LDIRK[2], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
                        warp.assemble_form('M','W'))
 warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
     if t%1==0:
-        warp.create_contacts(cutoff=2.5)
+        warp.create_contacts(pairs=cpairs,cutoff=3.0)
     dirk.march()
     if t%1==0:
-        warp.output_states("post/impact/yarn_{0}_"+str(t/1+2)+".pvd",1)
-        warp.output_surfaces("post/impact/mesh_{0}_"+str(t/1+2)+".pvd",1)
+        output()

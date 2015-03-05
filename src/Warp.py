@@ -21,9 +21,10 @@ class Warp():
 
         # Initialize all of the fibrils
         for e,p,ne in zip(endpts, props,Nelems):
-            prop = defprops.update(p)
+            prop = defprops.copy()
+            prop.update(p)
 
-            fib = Fibril(e,ne,p,Prob, order=order)
+            fib = Fibril(e,ne,prop,Prob, order=order)
 
             self.fibrils.append(fib)
             self.CMM.add(fib.mesh)
@@ -56,6 +57,9 @@ class Warp():
     def output_surfaces(self,fname,i):
         for j,fib in enumerate(self.fibrils):
             fib.WriteSurface(fname.format(j),i)
+    def output_solids(self,fname,i):
+        for j,fib in enumerate(self.fibrils):
+            fib.WriteSolid(fname.format(j),i)
     def output_contacts(self,fname):
         for j,c in enumerate(self.contacts):
             c.output_file(fname.format(self.fibril_pairs[j][0],self.fibril_pairs[j][1],"pairs"),
@@ -138,3 +142,9 @@ class Warp():
             mdof = self.spaces[self.space_key[key]].dofmap()
             for i,fib in enumerate(self.fibrils):
                 fib.problem.fields[key].vector()[:] = f.vector()[mdof.part(i).dofs()]
+
+    def pull_fibril_fields(self):
+        for key,f in self.fields.iteritems():
+            mdof = self.spaces[self.space_key[key]].dofmap()
+            for i,fib in enumerate(self.fibrils):
+                 f.vector()[mdof.part(i).dofs()] = fib.problem.fields[key].vector()[:]

@@ -13,7 +13,7 @@ defaults = { 'radius':0.2,
              'em_B':Constant((0.0,1.0,0.0)) }
 props = [ { 'em_B':Constant((1.0,1.0,0.0))} ]
 
-warp = Warp(endpts, props, defaults, MultiphysicsProblem)
+warp = Warp(endpts, props, defaults, [20], MultiphysicsProblem)
 
 
 """
@@ -83,9 +83,10 @@ def solve(order,NT):
     return (times,time_series,h,order)
 
 
-Tmax = 5.0
-NTS = [50,100,200]
-orders = [1,2,3]
+Tmax = 20.0
+NTS = range(50,301,50)
+NTS.append(500)
+orders = [1]
 all_series = [ ]
 
 for order in orders:
@@ -94,7 +95,6 @@ for order in orders:
         results.append( solve(order,NT) )
     all_series.append( (order, results) )
 
-embed()
 def make_plots(all_series):
     for g in xrange(len(probes)):
         plt.figure()
@@ -114,9 +114,11 @@ def compute_convergence(all_series):
         for ix,series in enumerate(all_series):
         
             print (scipy.stats.linregress([ np.log(x[2]) for x in series[1][:(-1 if ix==len(all_series)-1 else -2)] ],
-                                                [ np.log(np.abs(x[1][-1,g]-exact)) for x in series[1][:(-1 if ix==len(all_series)-1 else -2)] ]))[0],
+                                          [ np.log(np.abs(x[1][-1,g]-exact)) for x in series[1][:(-1 if ix==len(all_series)-1 else -2)] ]))[0],
         print ""
-
 make_plots(all_series)
-compute_convergence(all_series)
 plt.show()
+
+embed()
+
+compute_convergence(all_series)
