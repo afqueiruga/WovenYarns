@@ -72,19 +72,16 @@ class MultiphysicsBaseProblem(ProblemDescription):
 
     def fields_and_tests(self):
         pass
-        return w, q,h1,h2, wv, vq,vh1,vh2, T, Vol, \
-          tw, tvq,tvh1,tvh2, tT,tVol, \
-          Delw,DelT,DelVol, \
-          dwdt,dvdqdt,dvh1dt,dvh2dt,dTdt
+        
     def fem_forms(self):
         pass
     
     def Build_Forms(self):
         # Fetch the fields
-        w, q,h1,h2, wv, vq,vh1,vh2, T, Vol, \
+        wx,q,h1,h2, wv, vq,vh1,vh2, T, Vol, \
           tw, tvq,tvh1,tvh2, tT,tVol, \
           Delw,DelT,DelVol, \
-          dwdt,dvdqdt,dvh1dt,dvh2dt,dTdt = self.fields_and_tests()
+          dvdtW,dvqdt,dvh1dt,dvh2dt,dTdt = self.fields_and_tests()
         
         # Set up the measures
         ds = Measure("ds")[self.boundaries]
@@ -125,7 +122,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
         E2 = PROP['E2']
 
         X0 = PROP['X0']
-        I = Identity(W.cell().geometric_dimension())
+        I = Identity(self.spaces['W'].cell().geometric_dimension())
 
         
         # Perform the cross section integration
@@ -270,7 +267,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
             'f_Pi1':f_Pi1
             }
 
-        fem_forms = self.fem_forms()
+        fem_forms = self.fem_forms( MassMech,FMechTot,MassTher,FTherTot,FElecTot, wx,wv,T,Vol, Delw,DelT,DelVol)
         fem_forms.update(stat_fields)
         return fem_forms
 

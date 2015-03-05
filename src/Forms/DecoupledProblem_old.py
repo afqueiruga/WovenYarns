@@ -24,8 +24,6 @@ default_properties = {
     'em_bc_J_1': 0.0,
     'em_bc_r_0': 0.0,
     'em_bc_r_1': 0.0
-    
-
 }
 class DecoupledProblem(ProblemDescription):
     """ This creates a multiphysics problem with different spaces for each field """
