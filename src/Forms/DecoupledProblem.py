@@ -54,7 +54,8 @@ class DecoupledProblem(MultiphysicsBaseProblem):
           Delw,DelT,DelVol, \
           dvdtW,dvqdt,dvh1dt,dvh2dt,dTdt
           
-    def fem_forms(self, MassMech,FMechTot,MassTher,FTherTot,FElecTot, wx,wv,T,Vol, Delw,DelT,DelVol):
+    def fem_forms(self, MassMech,FMechTot,MassTher,FTherTot,FElecTot,
+                  wx,wv,T,Vol, Delw,DelT,DelVol):
         # Functional derivatives
         AX = derivative(FMechTot,wx,Delw)
         AV = derivative(FMechTot,wv,Delw)
