@@ -11,7 +11,7 @@ sheet = Geometries.PlainWeaveFibrils(2, 2.0,2.0, 2, 2.0,2.0,
 endpts = sheet.endpts()
 defaults = { 'radius':0.15,
              'em_B':Constant((0.0,0.0,0.0)),
-             'dissipation':2.0e1,
+             'dissipation':5.0e0,
              'mech_bc_trac_0':Constant((0.0,0.0,0.0))}
 props = [ {} for i in endpts ]
 Nelems = [ 20 for i in endpts ]
@@ -51,7 +51,7 @@ warp.create_contacts(cpairs,cutoff=0.5)
 
 
 
-Tmax=0.5
+Tmax=1.0
 NT = 10
 h = Tmax/NT
 
@@ -107,7 +107,6 @@ bcground = MultiMeshDirichletBC(warp.spaces['S'], ground, bound_1)
 bctest = MultiMeshDirichletBC(warp.spaces['S'], testvol, bound_2)
 
 em_bc = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound_2)
-
 def solve_em():
     print "Solving EM..."
     # Reset the potentials
@@ -130,7 +129,26 @@ def solve_em():
         warp.update()
         print "  ",itcnt," Norm:", eps
         itcnt += 1
-        
+
+temp_bc =  MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
+def solve_temp():
+    print "Solving Temperature"
+    DelT = MultiMeshFunction(warp.spaces['S'])
+    eps = 1.0
+    tol = 1.0e-11
+    maxiter = 20
+    itcnt = 0
+    while eps>tol and itcnt < maxiter:
+        warp.create_contacts(cutoff=0.5)
+        R,AT = warp.assemble_forms(['FT','AT'],'S')
+        temp_bc.apply(AT,R)
+        solve(AT,DelT.vector(),R)
+        warp.fields['T'].vector()[:] -= DelT.vector()[:]
+        eps=np.linalg.norm(DelT.vector().array(), ord=np.Inf)
+        warp.update()
+        print "  ",itcnt," Norm:", eps
+        itcnt += 1
+    
 def static_solve():
     DelW = MultiMeshFunction(warp.spaces['W'])
     eps = 1.0
@@ -150,13 +168,14 @@ def static_solve():
         # output()
 
 # embed()
-NITER = 5
-probes = [np.zeros((NITER,3)),np.zeros((NITER,3)),np.zeros((NITER))]
+NITER = 10
+probes = [np.zeros((NITER+1,3)),np.zeros((NITER+1,3)),np.zeros((NITER+1))]
 sample_num = 0
 def record_samples():
     global sample_num
     init_freeze()
     solve_em()
+    solve_temp()
     output()
     tx,ty,I= integrate_f()
     probes[0][sample_num,:] = tx[:]
@@ -175,7 +194,6 @@ for i in xrange(NITER):
     init_freeze()
     dynamic_steps(NT)
     record_samples()
-    output()
 
 from matplotlib import pylab as plt
 plt.plot(probes[0],'-+')
