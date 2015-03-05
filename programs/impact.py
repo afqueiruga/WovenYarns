@@ -5,19 +5,12 @@ from IPython import embed
 """
 Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
-endpts = []
-
-# Big plainweave
-# sheets = [ (8,5.2,5.0, 8,5.2,5.0,  0.0,0.2),
-#            (8,5.2,5.0, 8,5.2,5.0, -0.8,0.2) ]
-# for z in sheets:
-#     endpts.extend(  Geometries.PlainWeave_endpts(*z) )
-
-# fibril level
 
 sheets = [
     Geometries.PlainWeaveFibrils(8,10.0,10.0, 8,10.0,10.0, 0.0,0.25, [ 3 ],0.41)
     ]
+
+endpts = []
 for s in sheets:
     endpts.extend( s.endpts() )
 endpts.append([ [0, 0, 3.2],[ 0, 0, 2.9] ])

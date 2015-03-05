@@ -1,4 +1,4 @@
-from dolfin import Expression
+from dolfin import Expression, Function, Constant, assign
 import numpy as np
 
 from Warp import Warp
@@ -124,45 +124,47 @@ class PlainWeaveFibrils(TextileGeometry):
         for i in xrange(istart,istart+self.NX):
             for j in xrange(np.sum(self.pattern)):
                 fib = warp.fibrils[i*np.sum(self.pattern)+j]
-                fib.problem.fields['wx'].interpolate(Expression((
-                    " x[0]*sq",
-                    "0",
-                    "A1*sin(x[0]*p)",
-                    "0",
-                    "0",
-                    "0",
-                    "0",
-                    "0",
-                    "0"),
-                    sq = -(self.restX-self.setX)/self.restX,
-                    p=np.pi/self.restX *(self.NY)/2.0,
-                    A1=(-1.0 if i%2==0 else 1.0)*self.height
+                qhh = ( (
+                     " x[0]*sq",
+                     "0",
+                     "A1*sin(x[0]*p)"
+                    ),
+                    ( "0","0","0"),
+                    ( "0","0","0")
+                    )
+                temp_field = Function(fib.problem.spaces['V'])
+                for fix in xrange(3):
+                    temp_field.interpolate(Expression(
+                        qhh[fix],
+                        sq = -(self.restX-self.setX)/self.restX,
+                        p=np.pi/self.restX *(self.NY)/2.0,
+                        A1=(-1.0 if i%2==0 else 1.0)*self.height
                     ))
-                fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                                                 "0.0"," 0.0","0.0",
-                                                                 "0.0","0.0","0.0")))
+                    assign(fib.problem.fields['wx'].sub(fix),temp_field)
+                    temp_field.interpolate(Constant((0.0,0.0,0.0)))
+                    assign(fib.problem.fields['wv'].sub(fix),temp_field)
         for i in xrange(istart+self.NX,istart+(self.NX+self.NY)):
             for j in xrange(np.sum(self.pattern)):
-                            
                 fib = warp.fibrils[i*np.sum(self.pattern)+j]
-                fib.problem.fields['wx'].interpolate(Expression((
-                    "0",
+                vqhh = ((
+                     "0",
                     " x[1]*sq",
-                    "A1*sin(x[1]*p)",
-                    "0",
-                    "0",
-                    "0",
-                    "0",
-                    "0",
-                    "0"),
-                    sq = -(self.restY-self.setY)/self.restY,
-                    p=np.pi/self.restY *(self.NX)/2.0,
-                    A1=(-1.0 if i%2==1 else 1.0)*self.height
+                    "A1*sin(x[1]*p)"
+                    ),
+                    ( "0","0","0"),
+                    ( "0","0","0")
+                    )
+                temp_field = Function(fib.problem.spaces['V'])
+                for fix in xrange(3):
+                    temp_field.interpolate(Expression(
+                        vqhh[fix],
+                        sq = -(self.restY-self.setY)/self.restY,
+                        p=np.pi/self.restY *(self.NX)/2.0,
+                        A1=(-1.0 if i%2==1 else 1.0)*self.height
                     ))
-                fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
-                                                                 "0.0"," 0.0","0.0",
-                                                                 "0.0","0.0","0.0")))
-                
+                    assign(fib.problem.fields['wx'].sub(fix), temp_field)
+                    temp_field.interpolate(Constant((0.0,0.0,0.0)))
+                    assign(fib.problem.fields['wv'].sub(fix),temp_field)                
                         
     def contact_pairs(self):
         lenp = np.sum(self.pattern)
