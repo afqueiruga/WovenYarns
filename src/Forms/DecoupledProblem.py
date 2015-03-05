@@ -17,6 +17,7 @@ default_properties = {
     'dissipation':1.0e-1,
     'contact_penalty': 4.0,
     'contact_em': 1.0,
+    'contact_temp': 0.1,
     'mech_bc_trac_0': Constant((0.0,0.0,0.0)),
     'mech_bc_trac_1': Constant((0.0,0.0,0.0)),
     'em_bc_J_0': 0.0,
@@ -133,6 +134,7 @@ class DecoupledProblem(ProblemDescription):
 
         contact_penalty = PROP['contact_penalty']
         contact_em = PROP['contact_em']
+        contact_temp = PROP['contact_temp']
 
         
         # Neumann BC values
@@ -169,6 +171,7 @@ class DecoupledProblem(ProblemDescription):
         p_J_1 = None
 
         f_I = None
+        f_Pi1 = None
         
         GPS2D = CircCart2D[4]
         J0 = radius*radius
@@ -231,6 +234,7 @@ class DecoupledProblem(ProblemDescription):
             p_J_1_Loc =  weight*J0*dot(Ez,em_J)*ds(1)
 
             f_I_Loc = weight*J0*em_J
+            f_Pi1_Loc = weight*J0*F*S*Ez
             
             # Finalize
             FMechLoc = weight*J0*( FInt + FExt ) * dx
@@ -255,6 +259,7 @@ class DecoupledProblem(ProblemDescription):
             p_J_1 = p_J_1_Loc if p_J_1 is None else p_J_1 + p_J_1_Loc
 
             f_I = f_I_Loc if f_I is None else f_I + f_I_Loc
+            f_Pi1 = f_Pi1_Loc if f_Pi1 is None else f_Pi1 + f_Pi1_Loc
             
         # Contact Forms
         xr = X0 + q
@@ -263,16 +268,20 @@ class DecoupledProblem(ProblemDescription):
         ContactForm = -dot(jump(tvq),
                         conditional(ge(overlap,0.0), -contact_penalty*overlap,0.0)*jump(xr)/dist) \
                         *dc(0, metadata={"num_cells": 2,"special":"contact"})
-
+        ThermalContact = -dot(
+            jump(tT),
+            conditional(ge(overlap,0.0), contact_temp,0.0)*jump(T)
+            )*dc(0,metadata={"num_cells": 2,"special":"contact"})
         VoltageContact = -dot(
             jump(tVol),
             conditional(ge(overlap,0.0), -contact_em,0.0)*jump(Vol)
             )*dc(0,metadata={"num_cells": 2,"special":"contact"})
 
         FMechTot += ContactForm
+        FTherTot += ThermalContact
         FElecTot += VoltageContact
-        # Functional derivatives
         
+        # Functional derivatives
         AX = derivative(FMechTot,wx,Delw)
         AV = derivative(FMechTot,wv,Delw)
         AT = derivative(FTherTot,T,DelT)
@@ -300,7 +309,8 @@ class DecoupledProblem(ProblemDescription):
             'p_J,0':Form(p_J_0),
             'p_J_1':Form(p_J_1),
 
-            'f_I':f_I
+            'f_I':f_I,
+            'f_Pi1':f_Pi1
             }
 
     def split_for_io(self):
@@ -313,11 +323,11 @@ class DecoupledProblem(ProblemDescription):
                      self.spaces['V'])
 
         I = project(self.forms['f_I'], self.spaces['V'])
-        
+        Pi1 = project(self.forms['f_Pi1'], self.spaces['V'])
         return {
                 'q':q, 'h1':h1, 'h2':h2,
                 'vq':vq, 'vh1':vh1, 'vh2':vh2,
                 'g1':g1, 'g2':g2,
                 'T':self.fields['T'], 'Vol':self.fields['Vol'],
-                'I':I
+                'I':I, 'Pi1':Pi1
             }

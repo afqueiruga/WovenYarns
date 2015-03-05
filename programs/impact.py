@@ -14,9 +14,12 @@ endpts = []
 #     endpts.extend(  Geometries.PlainWeave_endpts(*z) )
 
 # fibril level
-sheets = [ (8,10.0,10.0, 8,10.0,10.0, 0.0,0.25, [ 3 ],0.41) ]
-for z in sheets:
-    endpts.extend( Geometries.PlainWeaveFibrils_endpts(*z) )
+
+sheets = [
+    Geometries.PlainWeaveFibrils(8,10.0,10.0, 8,10.0,10.0, 0.0,0.25, [ 3 ],0.41)
+    ]
+for s in sheets:
+    endpts.extend( s.endpts() )
 endpts.append([ [0, 0, 3.2],[ 0, 0, 2.9] ])
 
 E = 1.26 #MPa
@@ -27,16 +30,14 @@ defaults = { 'mu':E/(2*(1 + nu)),
              'radius':0.2,
              'em_B':Constant((0.0,0.0,0.0)),
              'contact_penalty':50.0,
-             'dissipation':0.0
+             'dissipation':0.01
              }
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':2.0 }
+props[-1] = { 'radius':2.0, 'dissipation':0.0 }
 Nelems = [ 20 for i in endpts ]
 Nelems[-1] = 1
 
 warp = Warp(endpts,props,defaults, Nelems, DecoupledProblem)
-
-
 
 outputcnt = 0
 def output():
@@ -48,17 +49,16 @@ def output():
 output()
 
 istart=0
-for z in sheets:
-    # Geometries.PlainWeave_initialize(warp, istart, *z)
-    Geometries.PlainWeaveFibrils_initialize(warp,istart, *z)
-    istart += z[0]+z[3]
+for s in sheets:
+    s.initialize(warp,istart)
+    istart += s.nfibril
 
     
 fib =  warp.fibrils[-1]
 fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
-fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-10.0",
+fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-30.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
 warp.pull_fibril_fields()
@@ -66,7 +66,11 @@ warp.pull_fibril_fields()
 output()
 
 
-warp.create_contacts(cutoff=3.0)
+cpairs = []
+for s in sheets:
+    cpairs.extend(s.contact_pairs())
+cpairs.extend((i,len(endpts)-1) for i in xrange(len(endpts)-1))
+warp.create_contacts(pairs=cpairs,cutoff=3.0)
 
 Tmax=1.0
 NT = 200
@@ -90,7 +94,7 @@ dirk = DIRK_Monolithic(h,LDIRK[2], sys,warp.update,apply_BCs,
 warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
     if t%1==0:
-        warp.create_contacts(cutoff=3.0)
+        warp.create_contacts(pairs=cpairs,cutoff=3.0)
     dirk.march()
     if t%1==0:
         output()
