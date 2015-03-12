@@ -7,13 +7,24 @@ from IPython import embed
 """
 Set up the warp with a single fibril
 """
-endpts = [ [[-10.0,0.0,0.0],[10.0,0.0,0.0]] ,
-            ]
-defaults = { 'radius':0.2,
-             'em_B':Constant((0.0,1.0,0.0)) }
-props = [ { 'em_B':Constant((1.0,1.0,0.0))} ]
 
-warp = Warp(endpts, props, defaults, [20], MultiphysicsProblem)
+E = 10.0
+nu = 0.0
+B = 1.0
+radius = 0.02
+Phi = np.pi/4.0
+
+props =  [{
+    'mu':E/(2*(1 + nu)),
+    'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
+    'radius':radius,
+    'rho':2.0,
+    'em_B':Constant((B*np.cos(Phi),B*np.sin(Phi),0.0)),
+    'dissipation':0.01
+    }]
+
+endpts = [ [[-1.0,0.0,0.0],[1.0,0.0,0.0]] ]
+warp = Warp(endpts, props, {}, [40], MonolithicProblem)
 
 
 """
@@ -46,7 +57,7 @@ def initialize():
         fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0",
-                                       "0.0", "x[0]/100.0")))
+                                       "0.0", "x[0]/5.0")))
         mdof = warp.spaces['W'].dofmap()
         warp.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
         warp.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
@@ -54,9 +65,9 @@ def initialize():
 
 
 probes = [ (np.array([0.0,0.0, 0.0],dtype=np.double),2,'x'),
-            (np.array([5.0,0.0, 0.0],dtype=np.double),1,'x'),
-            (np.array([5.0,0.0, 0.0],dtype=np.double),9,'v'),
-            (np.array([5.0,0.0, 0.0],dtype=np.double),10,'v')]
+            (np.array([0.5,0.0, 0.0],dtype=np.double),1,'x'),
+            (np.array([0.5,0.0, 0.0],dtype=np.double),9,'v'),
+            (np.array([0.5,0.0, 0.0],dtype=np.double),10,'v')]
 weval = np.zeros(11)
 
 
@@ -69,10 +80,13 @@ def solve(order,NT):
     dirk = DIRK_Monolithic(h,LDIRK[order], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
                        warp.assemble_form('M','W'))
-
+    warp.output_states("post/dirk/dirk_{0}_"+str(0)+".pvd",0)
+    warp.output_solids("post/dirk/mesh_{0}_"+str(0)+".pvd",0)
     for t in xrange(NT):
         dirk.march()
-        # warp.output_states("post/dirk_{0}_"+str(t)+".pvd",0)
+        warp.output_states("post/dirk/dirk_{0}_"+str(t+1)+".pvd",0)
+        warp.output_solids("post/dirk/mesh_{0}_"+str(t+1)+".pvd",0)
+
         for g,p in enumerate(probes):
             if p[2]=='x':
                 warp.fibrils[0].problem.fields['wx'].eval(weval,p[0])
@@ -83,10 +97,10 @@ def solve(order,NT):
     return (times,time_series,h,order)
 
 
-Tmax = 20.0
-NTS = range(50,301,50)
-NTS.append(500)
-orders = [1]
+Tmax = 5.0
+NTS = [100] #(50,301,50)
+# NTS.append(500)
+orders = [2]
 all_series = [ ]
 
 for order in orders:

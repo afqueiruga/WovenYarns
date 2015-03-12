@@ -20,8 +20,8 @@ defaults = { 'mu':E/(2*(1 + nu)),
              'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
              'rho':0.00144,
              'radius':0.2,
-             'em_B':Constant((0.0,0.01,0.0)),
-             'contact_penalty': 100.0,
+             'em_B':Constant((0.0,0.005,0.0)),
+             'contact_penalty': 500.0,
              'dissipation':0.01
              }
 props = [ {} for i in endpts ]
@@ -56,7 +56,7 @@ cpairs = []
 for s in sheets:
     cpairs.extend(s.contact_pairs())
 cpairs.extend((i,len(endpts)-1) for i in xrange(len(endpts)-1))
-warp.create_contacts(pairs=cpairs,cutoff=3.0)
+warp.create_contacts(pairs=cpairs,cutoff=1.5)
 
 
 output()
@@ -77,15 +77,15 @@ def sys(time):
     return warp.assemble_forms(['F','AX','AV'],'W')
 
 
-Tmax=10.0
-NT = 1000
+Tmax=1.0
+NT = 500
 h = Tmax/NT
-dirk = DIRK_Monolithic(h,LDIRK[2], sys,warp.update,apply_BCs,
+dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
                        warp.assemble_form('M','W'))
 warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
-    if t%3==0:
+    if t%1==0:
         warp.create_contacts(pairs=cpairs,cutoff=1.5)
     dirk.march()
     if t%10==0:

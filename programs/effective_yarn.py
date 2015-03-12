@@ -116,6 +116,26 @@ def solve_em():
         print "  ",itcnt," Norm:", eps
         itcnt += 1
 
+
+temp_bc =  MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
+def solve_temp():
+    print "Solving Temperature"
+    DelT = MultiMeshFunction(warp.spaces['S'])
+    eps = 1.0
+    tol = 1.0e-11
+    maxiter = 20
+    itcnt = 0
+    while eps>tol and itcnt < maxiter:
+        warp.create_contacts(cutoff=0.5)
+        R,AT = warp.assemble_forms(['FT','AT'],'S')
+        temp_bc.apply(AT,R)
+        solve(AT,DelT.vector(),R)
+        warp.fields['T'].vector()[:] -= DelT.vector()[:]
+        eps=np.linalg.norm(DelT.vector().array(), ord=np.Inf)
+        warp.update()
+        print "  ",itcnt," Norm:", eps
+        itcnt += 1
+        
 def integrate_f():
     tx = np.zeros(3)
     ty = np.zeros(3)
@@ -141,6 +161,7 @@ def record_samples():
     global sample_num
     init_freeze()
     solve_em()
+    solve_temp()
     output()
     tx,ty,I= integrate_f()
     probes[0][sample_num,:] = tx[:]

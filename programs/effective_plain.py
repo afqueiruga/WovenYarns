@@ -11,7 +11,8 @@ sheet = Geometries.PlainWeaveFibrils(2, 2.0,2.0, 2, 2.0,2.0,
 endpts = sheet.endpts()
 defaults = { 'radius':0.15,
              'em_B':Constant((0.0,0.0,0.0)),
-             'dissipation':5.0e0,
+             'dissipation':1.0e0,
+             'contact_penalty':5.0,
              'mech_bc_trac_0':Constant((0.0,0.0,0.0))}
 props = [ {} for i in endpts ]
 Nelems = [ 20 for i in endpts ]
@@ -47,12 +48,12 @@ def init_freeze():
 output()
 
 cpairs = sheet.contact_pairs()
-warp.create_contacts(cpairs,cutoff=0.5)
+warp.create_contacts(cutoff=0.5)
 
 
 
 Tmax=1.0
-NT = 10
+NT = 20
 h = Tmax/NT
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
@@ -93,10 +94,10 @@ dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
 
 def dynamic_steps(NT):
     for t in xrange(NT):
-        if t%3==0:
-            warp.create_contacts(cutoff=0.5)
+        if t%1==0:
+            warp.create_contacts(cpairs,cutoff=0.5)
         dirk.march()
-        # output()
+        output()
 
 ground = Constant(0.0)
 zeroS = Constant(0.0)
