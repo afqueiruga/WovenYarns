@@ -104,9 +104,15 @@ class Fibril():
         edit.init_cells( qN.shape[1]*3*NT)
         for ix in xrange(1,qN.shape[1]):
             for jt in xrange(NT-1):
-                edit.add_cell(3*NT*(ix-1)+3*jt,   lda*ix+jt   , lda*ix+jt+1, lda*ix+NT, lda*(ix-1)+jt+0)
-                edit.add_cell(3*NT*(ix-1)+3*jt+1, lda*(ix-1)+jt   , lda*(ix-1)+jt+1, lda*(ix-1)+NT, lda*ix+jt+1)
-                edit.add_cell(3*NT*(ix-1)+3*jt+2, lda*ix+NT,lda*(ix-1)+NT,lda*ix+jt+1,lda*(ix-1)+jt+0)
+                a = lda*ix+jt
+                b = lda*ix+jt+1
+                c = lda*ix+NT
+                d = lda*(ix-1)+jt+0
+                e = lda*(ix-1)+jt+1
+                f = lda*(ix-1)+NT
+                edit.add_cell(3*NT*(ix-1)+3*jt,   a, b, c, f)
+                edit.add_cell(3*NT*(ix-1)+3*jt+1, e, d, f, b)
+                edit.add_cell(3*NT*(ix-1)+3*jt+2, d, a, f, b)
             # edit.add_cell(3*NT*(ix-1)+3*NT-3,      lda*ix+NT-1   , lda*ix+NT-1, lda*ix+NT, lda*(ix-1)+NT-1)
             # edit.add_cell(3*NT*(ix-1)+3*NT-2,       NT*ix+0   ,    NT*(ix-1)+NT-1, NT*(ix-1)+0)
             # edit.add_cell(3*NT*(ix-1)+3*NT-1,     NT*ix+0   ,    NT*ix    +NT-1, NT*(ix-1)+NT-1)
