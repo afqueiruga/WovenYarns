@@ -10,9 +10,13 @@ Compute the effective properties of a single yarn
 # endpts.append([[-3.0,0.0,0.0],[3.0,0.0,0.0]])
 
 
-yarn = ([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.0, 1.1, [1,6,3,4],[0.11,0.11,0.11,0.11],[1,1,3,3,3])
+# yarn = ()
 
-endpts = Geometries.CoiledYarn_endpts(*yarn)
+yarn = Geometries.CoiledYarn([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.0, 1.1, [1,6,3,4],[0.11,0.11,0.11,0.11],[1,1,3,3,3])
+
+# endpts = Geometries.CoiledYarn_endpts(*yarn)
+endpts = yarn.endpts()
+
 
 defaults = { 'radius':0.05,
              'em_B':Constant((0.0,0.0,0.0)),
@@ -71,8 +75,10 @@ zeroW = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 em_bc = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
 
 output()
+# Geometries.CoiledYarn_initialize(warp,0, *yarn)
+yarn.initialize(warp,0)
 warp.create_contacts(cutoff=0.25)
-Geometries.CoiledYarn_initialize(warp,0, *yarn)
+
 warp.pull_fibril_fields()
 # init_stretch()
 output()
@@ -97,7 +103,7 @@ def solve_em():
     print "Solving EM..."
     # Reset the potentials
     for fib in warp.fibrils:
-        fib.problem.fields['Vol'].interpolate(Expression("A*x[0]+B",A=0.5/yarn[2],B=0.5))
+        fib.problem.fields['Vol'].interpolate(Expression("A*x[0]+B",A=0.5/yarn.restL,B=0.5))
     warp.pull_fibril_fields()
     DelV = MultiMeshFunction(warp.spaces['S'])
     eps = 1.0

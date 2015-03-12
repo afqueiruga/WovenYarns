@@ -7,6 +7,31 @@ from Warp import Warp
 Define routines for initializing textile geometries.
 """
 
+def make_bases(center):
+    E = center[1]- center[0]
+    if E[1]==0.0 and E[2]==0.0:
+        e1 = np.array([0.0,1.0,0.0])
+        e2 = np.array([0.0,0.0,1.0])
+        setL = np.abs(center[0][0])
+        orientation=0
+    elif E[0]==0.0 and E[2]==0.0:
+        e1 = np.array([1.0,0.0,0.0])
+        e2 = np.array([0.0,0.0,1.0])
+        setL = np.abs(center[0][1])
+        orientation=1
+    elif E[0]==0.0 and E[1]==0.0:
+        e1 = np.array([1.0,0.0,0.0])
+        e2 = np.array([0.0,1.0,0.0])
+        setL = np.abs(center[0][2])
+        orientation=2
+    else:
+        print "Error: Fibrils must be axis aligned! But I'm not going to stop."
+        e1 = np.array([0.0,1.0,0.0])
+        e2 = np.array([0.0,0.0,1.0])
+        setL = np.abs(center[0][0])
+        orientation=0
+    return orientation,setL,e1,e2
+
 class TextileGeometry():
     def __init__(self):
         self.nfibril = 0
@@ -206,35 +231,42 @@ def PackedYarn(centers, pattern,  Dia):
             endpts.append([centers[0]+p1*e1+p2*e2, centers[1]+p1*e1+p2*e2])
     return endpts
 
-
-def CoiledYarn_endpts(center, Rstart, restL, Ns, Dias,NTurns):
-    center[0] = np.array(center[0],dtype=np.double)
-    center[1] = np.array(center[1],dtype=np.double)
-    E = center[1]- center[0]
-    if E[1]==0.0 and E[2]==0.0:
-        e1 = np.array([0.0,1.0,0.0])
-        e2 = np.array([0.0,0.0,1.0])
-        setL = np.abs(center[0][0])
-    elif E[0]==0.0 and E[2]==0.0:
-        e1 = np.array([1.0,0.0,0.0])
-        e2 = np.array([0.0,0.0,1.0])
-        setL = np.abs(center[0][2])
-    elif E[0]==0.0 and E[1]==0.0:
-        e1 = np.array([1.0,0.0,0.0])
-        e2 = np.array([0.0,1.0,0.0])
-        setL = np.abs(center[0][2])
-    else:
-        print "Error: Fibrils must be axis aligned! But I'm not going to stop."
-        orientation=0
-    endpts = []
-    rad = Rstart
-    for n,d in zip(Ns,Dias):
-        for i in xrange(n):
-            p1 = rad*np.cos(2.0*np.pi*float(i)/float(n))
-            p2 = rad*np.sin(2.0*np.pi*float(i)/float(n))
-            endpts.append([restL/setL*center[0]+p1*e1+p2*e2, restL/setL*center[1]+p1*e1+p2*e2])
-        rad += d
-    return endpts
+class CoiledYarn(TextileGeometry):
+    def __init__(self,center,Rstart, restL, Ns,Dias,NTurns):
+        center[0] = np.array(center[0],dtype=np.double)
+        center[1] = np.array(center[1],dtype=np.double)
+        self.center = center
+        orientation,self.setL,self.e1,self.e2 = make_bases(self.center)
+        self.Rstart = Rstart
+        self.restL = restL
+        self.Ns = Ns
+        self.Dias = Dias
+        self.NTurns = NTurns
+        
+    def endpts(self):
+        endpts = []
+        rad = self.Rstart
+        for n,d in zip(self.Ns,self.Dias):
+            for i in xrange(n):
+                p1 = rad*np.cos(2.0*np.pi*float(i)/float(n))
+                p2 = rad*np.sin(2.0*np.pi*float(i)/float(n))
+                endpts.append([self.restL/self.setL*self.center[0]+p1*self.e1+p2*self.e2,
+                               self.restL/self.setL*self.center[1]+p1*self.e1+p2*self.e2])
+            rad += d
+        return endpts
+    
+    def initialize(self,warp,istart):
+        ist = istart
+        rad = self.Rstart
+        for n,d,NT in zip(self.Ns,self.Dias,self.NTurns):
+            for i in xrange(n):
+                apply_helix(warp.fibrils[ist+i], self.restL,self.setL,
+                            NT, d/2.0+rad,d/2.0+rad, float(i)/float(n))
+            ist += n
+            rad += d
+            
+    def contact_pairs():
+        return None
 
 def CoiledYarn_initialize(warp, istart, center,Rstart, restL, Ns,Dias,NTurns):
     ist = istart
