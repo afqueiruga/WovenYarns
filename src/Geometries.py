@@ -3,6 +3,8 @@ import numpy as np
 
 from Warp import Warp
 
+import Geometry_Curves
+
 """
 Define routines for initializing textile geometries.
 """
@@ -317,3 +319,60 @@ def apply_helix(fib, restX,setX,NTURN,A1,A2,phase):
     fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
                                                      "0.0"," 0.0","0.0",
                                                      "0.0","0.0","0.0")))
+
+
+
+class StockinetteFibrils(TextileGeometry):
+    def __init__(self, restL,setL, N, width, Ns, Dias, height):
+        self.restL = restL
+        self.setL = setL
+        self.N = N
+        self.width = width
+        self.Ns = Ns
+        self.Dias = Dias
+        self.e1 = np.array([0.0,1.0,0.0])
+        self.e2 = np.array([0.0,0.0,1.0])
+        self.height = height
+        
+    def endpts(self):
+        endpts = []
+        for i in xrange(self.N):
+            X = -self.width + 2.0*self.width/(self.N)*(i+0.5)
+            rad = 0.0
+            for n,d in zip(self.Ns,self.Dias):
+                for i in xrange(n):
+                    p1 = rad*np.cos(2.0*np.pi*float(i)/float(n))
+                    p2 = rad*np.sin(2.0*np.pi*float(i)/float(n))
+                    endpts.append([np.array([-self.restL,X,0])+p1*self.e1+p2*self.e2,
+                                   np.array([ self.restL,X,0])+p1*self.e1+p2*self.e2])
+                rad += d
+        return endpts
+
+    def initialize(self,warp,istart):
+        self.istart = istart
+        for i in xrange(istart,istart+self.N):
+            rad = 0.0
+            ist = 0
+            for n,d in zip(self.Ns,self.Dias):
+                for j in xrange(n):
+                    print j
+                    fib = warp.fibrils[i*np.sum(self.Ns)+ist]
+                    qhh = Geometry_Curves.qhh_stockinette
+                    temp_field = Function(fib.problem.spaces['V'])
+                    p1 = rad*np.cos(2.0*np.pi*float(i)/float(n))
+                    p2 = rad*np.sin(2.0*np.pi*float(i)/float(n))
+                    for fix in xrange(3):
+                        temp_field.interpolate(Expression(
+                            qhh[fix],
+                            sq = -(self.restL-self.setL)/self.restL,
+                            p=np.pi/self.restL *(2.5),
+                            o=self.restL/5.0,
+                            A1=1.5*self.width/self.N,A2=self.width/self.N,
+                            y1=p1, y2=p2
+                        ))
+                        assign(fib.problem.fields['wx'].sub(fix),temp_field)
+                        temp_field.interpolate(Constant((0.0,0.0,0.0)))
+                        assign(fib.problem.fields['wv'].sub(fix),temp_field)
+                    ist += 1
+            rad += d
+
