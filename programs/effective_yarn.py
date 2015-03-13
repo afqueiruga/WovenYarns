@@ -6,24 +6,29 @@ from IPython import embed
 Compute the effective properties of a single yarn
 """
 
-# endpts = Geometries.PackedYarn([[-1.0,0.0,0.0],[1.0,0.0,0.0]], [2,3,2], 0.1)
-# endpts.append([[-3.0,0.0,0.0],[3.0,0.0,0.0]])
+
+inner = [1,6,12]
+inrad = 0.01
+innum = np.sum(inner)
+outer = [3,4]
+outrad = 0.02
 
 
-# yarn = ()
 
-yarn = Geometries.CoiledYarn([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.0, 1.1, [1,6,3,4],[0.11,0.11,0.11,0.11],[1,1,3,3,3])
-
-# endpts = Geometries.CoiledYarn_endpts(*yarn)
+yarn = Geometries.CoiledYarn([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.0, 1.1, 
+                             inner+outer,[2.0*inrad for x in inner]+[2.0*outrad for x in outer],
+                             [1 for x in inner]+ [-3 for x in outer])
 endpts = yarn.endpts()
 
-
-defaults = { 'radius':0.05,
+defaults = { 'radius':outrad,
              'em_B':Constant((0.0,0.0,0.0)),
              'dissipation':2.0e1,
+             'em_sig':1.0e10,
              'mech_bc_trac_0':Constant((0.0,0.0,0.0))}
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':0.05 }
+for i in xrange(innum):
+    props[i]['radius'] = inrad
+    props[i]['em_sig'] = 100.0
 Nelems = [ 40 for i in endpts ]
 
 
@@ -75,13 +80,15 @@ zeroW = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 em_bc = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
 
 output()
+
 # Geometries.CoiledYarn_initialize(warp,0, *yarn)
 yarn.initialize(warp,0)
-warp.create_contacts(cutoff=0.25)
+# warp.create_contacts(cutoff=0.25)
 
 warp.pull_fibril_fields()
 # init_stretch()
 output()
+exit()
 
 Tmax=0.1
 NT = 5
