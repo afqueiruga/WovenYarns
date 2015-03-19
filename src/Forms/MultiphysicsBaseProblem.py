@@ -234,7 +234,9 @@ class MultiphysicsBaseProblem(ProblemDescription):
             f_Pi1 = f_Pi1_Loc if f_Pi1 is None else f_Pi1 + f_Pi1_Loc
             
         # Contact Forms
-        xr = X0 + q
+        XX = Expression(("x[0]","x[1]","x[2]"))
+        xr =  XX + q
+        # xr = X0 + q
         dist = sqrt(dot(jump(xr),jump(xr)))
         overlap = (2.0*avg(radius)-dist)
         Rstar = 1.0/( 1.0/radius('-') + 1.0/radius('+') )
