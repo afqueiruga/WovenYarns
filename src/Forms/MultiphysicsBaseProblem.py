@@ -1,6 +1,7 @@
 from ProblemDescription import *
 from QuadraturePoints import RectOuterProd,CircCart2D
 
+import numpy as np
 
 class MultiphysicsBaseProblem(ProblemDescription):
     """ This creates a multiphysics problem with different spaces for each field """
@@ -236,16 +237,20 @@ class MultiphysicsBaseProblem(ProblemDescription):
         xr = X0 + q
         dist = sqrt(dot(jump(xr),jump(xr)))
         overlap = (2.0*avg(radius)-dist)
+        Rstar = 1.0/( 1.0/radius('-') + 1.0/radius('+') )
+        Estar = self.E #1.0/( 1.0/('-') + 1.0/E('+') )
+        cont_pres = contact_penalty*overlap
+        a_hertz = sqrt( 4.0/np.pi * Estar/Rstar * cont_pres )
         ContactForm = -dot(jump(tvq),
-                        conditional(ge(overlap,0.0), -contact_penalty*overlap,0.0)*jump(xr)/dist) \
+                        conditional(ge(overlap,0.0), -cont_pres,0.0)*jump(xr)/dist) \
                         *dc(0, metadata={"num_cells": 2,"special":"contact"})
         ThermalContact = -dot(
             jump(tT),
-            conditional(ge(overlap,0.0), contact_temp,0.0)*jump(T)
+            conditional(ge(overlap,0.0), contact_temp*a_hertz,0.0)*jump(T)
             )*dc(0,metadata={"num_cells": 2,"special":"contact"})
         VoltageContact = -dot(
             jump(tVol),
-            conditional(ge(overlap,0.0), -contact_em,0.0)*jump(Vol)
+            conditional(ge(overlap,0.0), -contact_em*a_hertz,0.0)*jump(Vol)
             )*dc(0,metadata={"num_cells": 2,"special":"contact"})
 
         FMechTot += ContactForm

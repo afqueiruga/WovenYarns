@@ -6,20 +6,29 @@ from IPython import embed
 Compute the effective properties of a single yarn
 """
 
-# endpts = Geometries.PackedYarn([[-1.0,0.0,0.0],[1.0,0.0,0.0]], [2,3,2], 0.1)
-# endpts.append([[-3.0,0.0,0.0],[3.0,0.0,0.0]])
+
+inner = [1,6,12]
+inrad = 0.01
+innum = np.sum(inner)
+outer = [3,4]
+outrad = 0.02
 
 
-yarn = ([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.0, 1.1, [1,6,3,4],[0.11,0.11,0.11,0.11],[1,1,3,3,3])
 
-endpts = Geometries.CoiledYarn_endpts(*yarn)
+yarn = Geometries.CoiledYarn([[-1.0,0.0,0.0],[1.0,0.0,0.0]], 0.0, 1.1, 
+                             inner+outer,[2.0*inrad for x in inner]+[2.0*outrad for x in outer],
+                             [1 for x in inner]+ [-3 for x in outer])
+endpts = yarn.endpts()
 
-defaults = { 'radius':0.05,
+defaults = { 'radius':outrad,
              'em_B':Constant((0.0,0.0,0.0)),
              'dissipation':2.0e1,
+             'em_sig':1.0e10,
              'mech_bc_trac_0':Constant((0.0,0.0,0.0))}
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':0.05 }
+for i in xrange(innum):
+    props[i]['radius'] = inrad
+    props[i]['em_sig'] = 100.0
 Nelems = [ 40 for i in endpts ]
 
 
@@ -71,14 +80,18 @@ zeroW = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 em_bc = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
 
 output()
-warp.create_contacts(cutoff=0.25)
-Geometries.CoiledYarn_initialize(warp,0, *yarn)
+
+# Geometries.CoiledYarn_initialize(warp,0, *yarn)
+yarn.initialize(warp,0)
+warp.create_contacts(cutoff=0.03)
+
 warp.pull_fibril_fields()
 # init_stretch()
 output()
+# exit()
 
-Tmax=0.1
-NT = 5
+Tmax=1.0
+NT = 20
 h = Tmax/NT
 dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
@@ -87,8 +100,8 @@ dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
 
 def dynamic_steps(NT):
     for t in xrange(NT):
-        if t%3==0:
-            warp.create_contacts(cutoff=0.3)
+        if t%5==0:
+            warp.create_contacts(cutoff=0.03)
         dirk.march()
         # output()
 
@@ -97,7 +110,7 @@ def solve_em():
     print "Solving EM..."
     # Reset the potentials
     for fib in warp.fibrils:
-        fib.problem.fields['Vol'].interpolate(Expression("A*x[0]+B",A=0.5/yarn[2],B=0.5))
+        fib.problem.fields['Vol'].interpolate(Expression("A*x[0]+B",A=0.5/yarn.restL,B=0.5))
     warp.pull_fibril_fields()
     DelV = MultiMeshFunction(warp.spaces['S'])
     eps = 1.0
@@ -116,6 +129,26 @@ def solve_em():
         print "  ",itcnt," Norm:", eps
         itcnt += 1
 
+
+temp_bc =  MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
+def solve_temp():
+    print "Solving Temperature"
+    DelT = MultiMeshFunction(warp.spaces['S'])
+    eps = 1.0
+    tol = 1.0e-11
+    maxiter = 20
+    itcnt = 0
+    while eps>tol and itcnt < maxiter:
+        warp.create_contacts(cutoff=0.5)
+        R,AT = warp.assemble_forms(['FT','AT'],'S')
+        temp_bc.apply(AT,R)
+        solve(AT,DelT.vector(),R)
+        warp.fields['T'].vector()[:] -= DelT.vector()[:]
+        eps=np.linalg.norm(DelT.vector().array(), ord=np.Inf)
+        warp.update()
+        print "  ",itcnt," Norm:", eps
+        itcnt += 1
+        
 def integrate_f():
     tx = np.zeros(3)
     ty = np.zeros(3)
@@ -141,6 +174,7 @@ def record_samples():
     global sample_num
     init_freeze()
     solve_em()
+    solve_temp()
     output()
     tx,ty,I= integrate_f()
     probes[0][sample_num,:] = tx[:]
