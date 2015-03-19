@@ -83,15 +83,15 @@ output()
 
 # Geometries.CoiledYarn_initialize(warp,0, *yarn)
 yarn.initialize(warp,0)
-# warp.create_contacts(cutoff=0.25)
+warp.create_contacts(cutoff=0.03)
 
 warp.pull_fibril_fields()
 # init_stretch()
 output()
-exit()
+# exit()
 
-Tmax=0.1
-NT = 5
+Tmax=1.0
+NT = 20
 h = Tmax/NT
 dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
@@ -100,8 +100,8 @@ dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
 
 def dynamic_steps(NT):
     for t in xrange(NT):
-        if t%3==0:
-            warp.create_contacts(cutoff=0.3)
+        if t%5==0:
+            warp.create_contacts(cutoff=0.03)
         dirk.march()
         # output()
 

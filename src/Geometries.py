@@ -40,7 +40,7 @@ class TextileGeometry():
         self.istart = 0
     def endpts(self,warp,istart):
         return []
-    def contact_pairs(self,istart):
+    def contact_pairs(self):
         return None
 
 class PlainWeave(TextileGeometry):
@@ -341,8 +341,8 @@ class StockinetteFibrils(TextileGeometry):
             rad = 0.0
             for n,d in zip(self.Ns,self.Dias):
                 for i in xrange(n):
-                    p1 = rad*np.cos(2.0*np.pi*float(i)/float(n))
-                    p2 = rad*np.sin(2.0*np.pi*float(i)/float(n))
+                    p1 = 0.0 #rad*np.cos(2.0*np.pi*float(i)/float(n))
+                    p2 = 0.0 #rad*np.sin(2.0*np.pi*float(i)/float(n))
                     endpts.append([np.array([-self.restL,X,0])+p1*self.e1+p2*self.e2,
                                    np.array([ self.restL,X,0])+p1*self.e1+p2*self.e2])
                 rad += d
@@ -357,22 +357,22 @@ class StockinetteFibrils(TextileGeometry):
                 for j in xrange(n):
                     print j
                     fib = warp.fibrils[i*np.sum(self.Ns)+ist]
-                    qhh = Geometry_Curves.qhh_stockinette
+                    qhh = Geometry_Curves.qhh_stockinette2
                     temp_field = Function(fib.problem.spaces['V'])
-                    p1 = rad*np.cos(2.0*np.pi*float(i)/float(n))
-                    p2 = rad*np.sin(2.0*np.pi*float(i)/float(n))
+                    p1 = rad*np.cos(2.0*np.pi*float(j)/float(n))
+                    p2 = rad*np.sin(2.0*np.pi*float(j)/float(n))
                     for fix in xrange(3):
                         temp_field.interpolate(Expression(
                             qhh[fix],
                             sq = -(self.restL-self.setL)/self.restL,
-                            p=np.pi/self.restL *(2.5),
-                            o=self.restL/5.0,
-                            A1=1.5*self.width/self.N,A2=self.width/self.N,
+                            p=np.pi/self.restL *(4.0),
+                            o=self.setL/3.5,
+                            A1=1.3*self.width/self.N,A2=self.width/self.N,
                             y1=p1, y2=p2
                         ))
                         assign(fib.problem.fields['wx'].sub(fix),temp_field)
                         temp_field.interpolate(Constant((0.0,0.0,0.0)))
                         assign(fib.problem.fields['wv'].sub(fix),temp_field)
                     ist += 1
-            rad += d
+                rad += d
 
