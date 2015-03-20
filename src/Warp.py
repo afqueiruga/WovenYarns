@@ -73,8 +73,14 @@ class Warp():
         """
 
         for i,fib in enumerate(self.fibrils):
-            fib.current_mesh = Mesh(fib.mesh)
-            fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
+            fib.current_mesh = Mesh(fib.problem.mesh)
+            fields = fib.problem.split_for_io()
+            vv = fields['q'].compute_vertex_values()
+            # embed()
+            vv = vv.reshape([3,vv.shape[0]/3])
+            for ix in xrange(vv.shape[1]):
+                fib.current_mesh.coordinates()[ix] += vv[:,ix]
+            # fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
         self.CG.cutoff = cutoff    
         self.CG.CreateTables([f.current_mesh for f in self.fibrils])
     
