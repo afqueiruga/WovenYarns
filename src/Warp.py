@@ -154,3 +154,13 @@ class Warp():
             mdof = self.spaces[self.space_key[key]].dofmap()
             for i,fib in enumerate(self.fibrils):
                  f.vector()[mdof.part(i).dofs()] = fib.problem.fields[key].vector()[:]
+
+    def save(self,fname):
+        data = { key:f.vector().array() for key,f in self.fields.iteritems() }
+        np.savez(fname,**data)
+
+    def load(self,fname):
+        data = np.load(fname+".npz")
+        for key,f in self.fields.iteritems():
+            f.vector()[:] = data[key][:]
+        self.update()
