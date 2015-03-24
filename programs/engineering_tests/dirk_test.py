@@ -146,6 +146,9 @@ def make_final_plots(NTS,points):
             plt.loglog( h, [np.abs(y-best) for y in p],'-+')
         plt.figure()
 def make_error_plots(NTS,points, snt,pts, labels):
+    font = {'family' : 'normal',
+            'size'   : 16}
+    matplotlib.rc('font', **font)
     hs = [ [Tmax / NT for NT in nts] for nts in NTS]
     shs =[ [Tmax / NT for NT in nts] for nts in snt]
     colors = ["b","g","r"]
@@ -155,7 +158,7 @@ def make_error_plots(NTS,points, snt,pts, labels):
         plt.ylabel("Logarithm of error in "+label)
         best = probe[-1][-1]
         for i,(h,p,sh,sp,c) in enumerate(zip(hs,probe,shs,spr,colors)):
-            plt.loglog( h, [np.abs(y-best) for y in p],'-',label='s='+str(i),color=c)
+            plt.loglog( h, [np.abs(y-best) for y in p],'-',label='s='+str(i+1),color=c)
             plt.loglog( sh, [np.abs(y-best) for y in sp],'+',color=c)
         plt.legend()
 def compute_convergence(NTS,points):

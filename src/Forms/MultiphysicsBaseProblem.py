@@ -240,9 +240,9 @@ class MultiphysicsBaseProblem(ProblemDescription):
         dist = sqrt(dot(jump(xr),jump(xr)))
         overlap = (2.0*avg(radius)-dist)
         Rstar = 1.0/( 1.0/radius('-') + 1.0/radius('+') )
-        Estar = self.E #1.0/( 1.0/('-') + 1.0/E('+') )
+        Estar = self.E #1.0/( 1.0/E('-') + 1.0/E('+') )
         cont_pres = contact_penalty*overlap
-        a_hertz = sqrt( 4.0/np.pi * Estar/Rstar * cont_pres )
+        a_hertz = sqrt( 4.0/np.pi * Estar/Rstar * abs(cont_pres) )
         ContactForm = -dot(jump(tvq),
                         conditional(ge(overlap,0.0), -cont_pres,0.0)*jump(xr)/dist) \
                         *dc(0, metadata={"num_cells": 2,"special":"contact"})

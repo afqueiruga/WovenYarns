@@ -6,8 +6,8 @@ from IPython import embed
 Compute the effective properties of a textile square
 """
 
-sheet = Geometries.PlainWeaveFibrils(2, 2.0,2.0, 2, 2.0,2.0, 
-         0.0,0.35*1.5, [3,4], 0.31)
+sheet = Geometries.PlainWeaveFibrils(4, 4.0,4.0, 4, 4.0,4.0, 
+         0.0,0.35*1.5, [3,4,3], 0.3)
 endpts = sheet.endpts()
 defaults = { 'radius':0.15,
              'em_B':Constant((0.0,0.0,0.0)),
@@ -21,21 +21,28 @@ warp = Warp(endpts,props,defaults, Nelems, DecoupledProblem)
 
 
 
-outputcnt = 0
+outputcnt = 21
 def output():
     global outputcnt
     warp.output_states("post/RVE/yarn_{0}_"+str(outputcnt)+".pvd",1)
     warp.output_solids("post/RVE/mesh_{0}_"+str(outputcnt)+".pvd",1)
+    # warp.CG.OutputFile("post/RVE/gammaC_"+str(outputcnt)+".pvd" )
     outputcnt+=1
 
 
-output()
+# output()
 
 sheet.initialize(warp,0)
-
+warp.pull_fibril_fields()
 def init_skew():
     for fib in warp.fibrils:
         fib.problem.fields['wv'].interpolate(Expression(("0.0","alpha*x[0]","0.0",
+                                                         "0.0"," 0.0","0.0",
+                                                         "0.0","0.0","0.0"),alpha=0.05))
+    warp.pull_fibril_fields()
+def init_stretch():
+    for fib in warp.fibrils:
+        fib.problem.fields['wv'].interpolate(Expression(("alpha*x[0]","0.0","0.0",
                                                          "0.0"," 0.0","0.0",
                                                          "0.0","0.0","0.0"),alpha=0.05))
     warp.pull_fibril_fields()
@@ -45,15 +52,15 @@ def init_freeze():
                                                          "0.0"," 0.0","0.0",
                                                          "0.0","0.0","0.0")))
     warp.pull_fibril_fields()
-output()
 
 cpairs = sheet.contact_pairs()
-warp.create_contacts(cutoff=0.5)
+warp.create_contacts(cpairs,cutoff=0.5)
+output()
 
 
 
-Tmax=1.0
-NT = 20
+Tmax=5.0
+NT = 100
 h = Tmax/NT
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
@@ -68,21 +75,29 @@ def apply_BCs(K,R,t,hold=False):
 
 
 def integrate_f():
-    tx = np.zeros(3)
-    ty = np.zeros(3)
+    tx0 = np.zeros(3)
+    tx1 = np.zeros(3)
+    ty0 = np.zeros(3)
+    ty1 = np.zeros(3)
     I = 0.0
     NDIR = sheet.NX*np.sum(sheet.pattern)
     for fib in warp.fibrils[:NDIR]:
-        tx[0] += assemble(fib.problem.forms['p_t0_1'])
-        tx[1] += assemble(fib.problem.forms['p_t1_1'])
-        tx[2] += assemble(fib.problem.forms['p_t2_1'])
+        tx0[0] += assemble(fib.problem.forms['p_t0_0'])
+        tx0[1] += assemble(fib.problem.forms['p_t1_0'])
+        tx0[2] += assemble(fib.problem.forms['p_t2_0'])
+        tx1[0] += assemble(fib.problem.forms['p_t0_1'])
+        tx1[1] += assemble(fib.problem.forms['p_t1_1'])
+        tx1[2] += assemble(fib.problem.forms['p_t2_1'])
     for fib in warp.fibrils[NDIR:]:
-        ty[0] += assemble(fib.problem.forms['p_t0_1'])
-        ty[1] += assemble(fib.problem.forms['p_t1_1'])
-        ty[2] += assemble(fib.problem.forms['p_t2_1'])
+        ty0[0] += assemble(fib.problem.forms['p_t0_0'])
+        ty0[1] += assemble(fib.problem.forms['p_t1_0'])
+        ty0[2] += assemble(fib.problem.forms['p_t2_0'])
+        ty1[0] += assemble(fib.problem.forms['p_t0_1'])
+        ty1[1] += assemble(fib.problem.forms['p_t1_1'])
+        ty1[2] += assemble(fib.problem.forms['p_t2_1'])
     for fib in warp.fibrils[:NDIR/2]:
         I += assemble(fib.problem.forms['p_J_1'])
-    return tx,ty,I
+    return tx0,tx1,ty0,ty1,I
         
 def sys(time):
     return warp.assemble_forms(['F','AX','AV'],'W')
@@ -94,16 +109,17 @@ dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
 
 def dynamic_steps(NT):
     for t in xrange(NT):
-        if t%1==0:
+        if t%5==0:
             warp.create_contacts(cpairs,cutoff=0.5)
         dirk.march()
-        output()
+        if t%10==0:
+            output()
 
 ground = Constant(0.0)
 zeroS = Constant(0.0)
-bound_1 = CompiledSubDomain("near(x[0],s) && x[1] < 0.0 && on_boundary",s=-2.0)
+bound_1 = CompiledSubDomain("near(x[0],s) && x[1] < 0.0 && x[1] > s2 && on_boundary",s=-sheet.restX, s2 = -sheet.restY/2.0)
 testvol = Constant(1.0)
-bound_2 = CompiledSubDomain("(near(x[0],s) || near(x[0],-s) ) && x[1] < 0.0 && on_boundary",s= 2.0)
+bound_2 = CompiledSubDomain("(near(x[0],s) || near(x[0],-s) ) && x[1] < 0.0 &&  x[1] > s2 && on_boundary",s= sheet.restX, s2 = -sheet.restY/2.0)
 bcground = MultiMeshDirichletBC(warp.spaces['S'], ground, bound_1)
 bctest = MultiMeshDirichletBC(warp.spaces['S'], testvol, bound_2)
 
@@ -168,9 +184,15 @@ def static_solve():
         itcnt += 1
         # output()
 
+# init_freeze()
+# dynamic_steps(NT)
+# warp.save("data/plain_relaxed_data")
+warp.load("data/plain_relaxed_data")
+
 # embed()
+NT = 10
 NITER = 10
-probes = [np.zeros((NITER+1,3)),np.zeros((NITER+1,3)),np.zeros((NITER+1))]
+probes = [np.zeros((NITER+1,3)),np.zeros((NITER+1,3)),np.zeros((NITER+1,3)),np.zeros((NITER+1,3)),np.zeros((NITER+1))]
 sample_num = 0
 def record_samples():
     global sample_num
@@ -178,14 +200,15 @@ def record_samples():
     solve_em()
     solve_temp()
     output()
-    tx,ty,I= integrate_f()
-    probes[0][sample_num,:] = tx[:]
-    probes[1][sample_num,:] = ty[:]
+    warp.save("data/plain_shear_"+str(sample_num))
+    tx0,tx1,ty0,ty1,I= integrate_f()
+    probes[0][sample_num,:] = tx0[:]
+    probes[1][sample_num,:] = ty0[:]
     probes[2][sample_num] = I
     sample_num += 1
 
-init_freeze()
-dynamic_steps(NT)
+# init_freeze()
+# dynamic_steps(NT)
 record_samples()
 
 
@@ -202,3 +225,12 @@ plt.figure()
 plt.plot(probes[1],'-+')
 plt.show()
 embed()
+
+
+
+
+def analyze_state(fname):
+    warp.load(fname)
+    
+
+    return integrate_f()
