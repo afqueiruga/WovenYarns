@@ -19,7 +19,7 @@ class Fibril():
         self.boundaries = FacetFunction("size_t", self.mesh)
         self.boundaries.set_all(0)
         for i,b in enumerate(self.boundary_domains):
-            b.mark(self.boundaries,i)
+            b.mark(self.boundaries,i+1)
         
         
         E = np.array(pts[1])- np.array(pts[0])

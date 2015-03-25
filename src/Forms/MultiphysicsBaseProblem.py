@@ -189,21 +189,21 @@ class MultiphysicsBaseProblem(ProblemDescription):
             FExt = inner(tv,cross(em_J,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
 
             # Neumann type BCs:
-            Mech_FBCLoc =  -weight*J0*inner(tv,mech_bc_trac_0)*ds(0) \
-                        + weight*J0*inner(tv,mech_bc_trac_1)*ds(1)
-            V_FBCLoc = -weight*J0*tVol*(em_bc_r_0*Vol+em_bc_J_0)*ds(0) \
-                      + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(1)
+            Mech_FBCLoc =  -weight*J0*inner(tv,mech_bc_trac_0)*ds(1) \
+                        + weight*J0*inner(tv,mech_bc_trac_1)*ds(2)
+            V_FBCLoc = -weight*J0*tVol*(em_bc_r_0*Vol+em_bc_J_0)*ds(1) \
+                      + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(2)
 
             # These are evaluation forms, no test functions
-            p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(0)
-            p_t1_0_Loc = -weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(0)
-            p_t2_0_Loc = -weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(0)
-            p_t0_1_Loc =  weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(1)
-            p_t1_1_Loc =  weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(1)
-            p_t2_1_Loc =  weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(1)
+            p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(1)
+            p_t1_0_Loc = -weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(1)
+            p_t2_0_Loc = -weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(1)
+            p_t0_1_Loc =  weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(2)
+            p_t1_1_Loc =  weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(2)
+            p_t2_1_Loc =  weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(2)
 
-            p_J_0_Loc = -weight*J0*dot(Ez,em_J)*ds(0)
-            p_J_1_Loc =  weight*J0*dot(Ez,em_J)*ds(1)
+            p_J_0_Loc = -weight*J0*dot(Ez,em_J)*ds(1)
+            p_J_1_Loc =  weight*J0*dot(Ez,em_J)*ds(2)
 
             f_I_Loc = weight*J0*em_J
             f_Pi1_Loc = weight*J0*F*S*Ez
