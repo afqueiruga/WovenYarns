@@ -122,6 +122,10 @@ class Warp():
 
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
+            assem.assemble_exterior_facets(self.fibrils[i].problem.forms[form_key],
+                                           mmdofmap.part(i),
+                                           self.fibrils[i].problem.boundaries
+                )
 
         for i, (a,b, (etab,stab,xtab,Xtab,dtab)) in enumerate(self.CG.active_pairs):
             assem.assemble_cell_pair(self.fibrils[a].problem.forms[form_key], 
