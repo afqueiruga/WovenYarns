@@ -267,7 +267,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
             'p_t0_1':Form(p_t0_1),
             'p_t1_1':Form(p_t1_1),
             'p_t2_1':Form(p_t2_1),
-            'p_J,0':Form(p_J_0),
+            'p_J_0':Form(p_J_0),
             'p_J_1':Form(p_J_1),
 
             'f_I':f_I,
