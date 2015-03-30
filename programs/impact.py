@@ -7,27 +7,31 @@ Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
 
 sheets = [
-    Geometries.PlainWeaveFibrils(8,10.0,10.0, 8,10.0,10.0, 0.0,0.25, [ 3 ],0.41)
+    Geometries.PlainWeaveFibrils(8,25.4,25.4, 8,25.4,25.4, 0.0,0.8, [ 2 ],1.21)
     ]
 
 endpts = []
 for s in sheets:
     endpts.extend( s.endpts() )
-endpts.append([ [0, 0, 3.2],[ 0, 0, 2.9] ])
+endpts.append([ [0, 0, 6.9],[ 0, 0, 6.5] ])
 
 E = 1.26 #MPa
 nu = 0.0
 defaults = { 'mu':E/(2*(1 + nu)),
              'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
              'rho':0.00144,
-             'radius':0.2,
+             'radius':0.6,
              'em_B':Constant((0.0,0.0,0.0)),
-             'contact_penalty':50.0,
+             'contact_penalty':5.0,
              'dissipation':0.01
              }
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':2.0, 'dissipation':0.0 }
+props[-1] = { 'radius':6.0, 'dissipation':0.0, 'rho':0.01 }
 Nelems = [ 20 for i in endpts ]
+for i in xrange(np.sum(sheets[0].pattern)*(sheets[0].NX/2-1),np.sum(sheets[0].pattern)*(sheets[0].NX/2+1)):
+    Nelems[i]=60
+for i in xrange(np.sum(sheets[0].pattern)*(sheets[0].NY/2-1),np.sum(sheets[0].pattern)*(sheets[0].NY/2+1)):
+    Nelems[np.sum(sheets[0].pattern)*(sheets[0].NX) + i]= 60
 Nelems[-1] = 1
 
 warp = Warp(endpts,props,defaults, Nelems, DecoupledProblem)
@@ -37,8 +41,9 @@ def output():
     global outputcnt
     warp.output_states("post/impact/yarn_{0}_"+str(outputcnt)+".pvd",1)
     warp.output_solids("post/impact/mesh_{0}_"+str(outputcnt)+".pvd",1)
+    # warp.CG.OutputFile("post/impact/gammaC_"+str(outputcnt)+".pvd" )
     outputcnt+=1
-
+warp.create_contacts(cutoff=6.5)
 output()
 
 istart=0
@@ -56,17 +61,17 @@ fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","-30.0",
                                        "0.0","0.0","0.0")))
 warp.pull_fibril_fields()
 
-output()
-
-
 cpairs = []
 for s in sheets:
     cpairs.extend(s.contact_pairs())
 cpairs.extend((i,len(endpts)-1) for i in xrange(len(endpts)-1))
-warp.create_contacts(pairs=cpairs,cutoff=3.0)
+warp.create_contacts(pairs=cpairs,cutoff=6.5)
 
-Tmax=1.0
-NT = 200
+output()
+
+
+Tmax=0.5
+NT = 1000
 h = Tmax/NT
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))
@@ -84,10 +89,11 @@ def sys(time):
 dirk = DIRK_Monolithic(h,LDIRK[2], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
                        warp.assemble_form('M','W'))
-warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
     if t%1==0:
-        warp.create_contacts(pairs=cpairs,cutoff=3.0)
+        warp.create_contacts(pairs=cpairs,cutoff=6.5)
     dirk.march()
-    if t%1==0:
+    if t%10==0:
         output()
+
+embed()

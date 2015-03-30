@@ -73,8 +73,14 @@ class Warp():
         """
 
         for i,fib in enumerate(self.fibrils):
-            fib.current_mesh = Mesh(fib.mesh)
-            fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
+            fib.current_mesh = Mesh(fib.problem.mesh)
+            fields = fib.problem.split_for_io()
+            vv = fields['q'].compute_vertex_values()
+            # embed()
+            vv = vv.reshape([3,vv.shape[0]/3])
+            for ix in xrange(vv.shape[1]):
+                fib.current_mesh.coordinates()[ix] += vv[:,ix]
+            # fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
         self.CG.cutoff = cutoff    
         self.CG.CreateTables([f.current_mesh for f in self.fibrils])
     
@@ -116,6 +122,10 @@ class Warp():
 
         for i,fib in enumerate(self.fibrils):
             assem.assemble_form(self.fibrils[i].problem.forms[form_key], mmdofmap.part(i))
+            assem.assemble_exterior_facets(self.fibrils[i].problem.forms[form_key],
+                                           mmdofmap.part(i),
+                                           self.fibrils[i].problem.boundaries
+                )
 
         for i, (a,b, (etab,stab,xtab,Xtab,dtab)) in enumerate(self.CG.active_pairs):
             assem.assemble_cell_pair(self.fibrils[a].problem.forms[form_key], 
@@ -148,3 +158,13 @@ class Warp():
             mdof = self.spaces[self.space_key[key]].dofmap()
             for i,fib in enumerate(self.fibrils):
                  f.vector()[mdof.part(i).dofs()] = fib.problem.fields[key].vector()[:]
+
+    def save(self,fname):
+        data = { key:f.vector().array() for key,f in self.fields.iteritems() }
+        np.savez(fname,**data)
+
+    def load(self,fname):
+        data = np.load(fname+".npz")
+        for key,f in self.fields.iteritems():
+            f.vector()[:] = data[key][:]
+        self.update()

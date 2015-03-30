@@ -176,7 +176,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
               - inner(tVol.dx(orientation),em_sig*(vB_ref))
 
             em_Egal = inv(F).T*(-Vol.dx(orientation) + vB_ref)*Ez
-            em_J = em_sig*em_Egal
+            em_J = 1/det(F)*F*em_sig*F.T*em_Egal
             
             
             # Thermal Form
@@ -189,21 +189,21 @@ class MultiphysicsBaseProblem(ProblemDescription):
             FExt = inner(tv,cross(em_J,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
 
             # Neumann type BCs:
-            Mech_FBCLoc =  -weight*J0*inner(tv,mech_bc_trac_0)*ds(0) \
-                        + weight*J0*inner(tv,mech_bc_trac_1)*ds(1)
-            V_FBCLoc = -weight*J0*tVol*(em_bc_r_0*Vol+em_bc_J_0)*ds(0) \
-                      + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(1)
+            Mech_FBCLoc =  -weight*J0*inner(tv,mech_bc_trac_0)*ds(1) \
+                        + weight*J0*inner(tv,mech_bc_trac_1)*ds(2)
+            V_FBCLoc = -weight*J0*tVol*(em_bc_r_0*Vol+em_bc_J_0)*ds(1) \
+                      + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(2)
 
             # These are evaluation forms, no test functions
-            p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(0)
-            p_t1_0_Loc = -weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(0)
-            p_t2_0_Loc = -weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(0)
-            p_t0_1_Loc =  weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(1)
-            p_t1_1_Loc =  weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(1)
-            p_t2_1_Loc =  weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(1)
+            p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(1)
+            p_t1_0_Loc = -weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(1)
+            p_t2_0_Loc = -weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(1)
+            p_t0_1_Loc =  weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(2)
+            p_t1_1_Loc =  weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(2)
+            p_t2_1_Loc =  weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(2)
 
-            p_J_0_Loc = -weight*J0*dot(Ez,em_J)*ds(0)
-            p_J_1_Loc =  weight*J0*dot(Ez,em_J)*ds(1)
+            p_J_0_Loc = -weight*J0*dot(ey,em_J)*ds(1)
+            p_J_1_Loc =  weight*J0*dot(ey,em_J)*ds(2)
 
             f_I_Loc = weight*J0*em_J
             f_Pi1_Loc = weight*J0*F*S*Ez
@@ -234,13 +234,15 @@ class MultiphysicsBaseProblem(ProblemDescription):
             f_Pi1 = f_Pi1_Loc if f_Pi1 is None else f_Pi1 + f_Pi1_Loc
             
         # Contact Forms
-        xr = X0 + q
+        XX = Expression(("x[0]","x[1]","x[2]"))
+        xr =  XX + q
+        # xr = X0 + q
         dist = sqrt(dot(jump(xr),jump(xr)))
         overlap = (2.0*avg(radius)-dist)
         Rstar = 1.0/( 1.0/radius('-') + 1.0/radius('+') )
-        Estar = self.E #1.0/( 1.0/('-') + 1.0/E('+') )
+        Estar = self.E #1.0/( 1.0/E('-') + 1.0/E('+') )
         cont_pres = contact_penalty*overlap
-        a_hertz = sqrt( 4.0/np.pi * Estar/Rstar * cont_pres )
+        a_hertz = sqrt( 4.0/np.pi * Estar/Rstar * abs(cont_pres) )
         ContactForm = -dot(jump(tvq),
                         conditional(ge(overlap,0.0), -cont_pres,0.0)*jump(xr)/dist) \
                         *dc(0, metadata={"num_cells": 2,"special":"contact"})
@@ -265,7 +267,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
             'p_t0_1':Form(p_t0_1),
             'p_t1_1':Form(p_t1_1),
             'p_t2_1':Form(p_t2_1),
-            'p_J,0':Form(p_J_0),
+            'p_J_0':Form(p_J_0),
             'p_J_1':Form(p_J_1),
 
             'f_I':f_I,

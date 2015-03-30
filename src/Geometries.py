@@ -376,3 +376,4 @@ class StockinetteFibrils(TextileGeometry):
                     ist += 1
                 rad += d
 
+
