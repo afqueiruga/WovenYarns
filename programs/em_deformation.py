@@ -19,7 +19,7 @@ nu = 0.0
 defaults = { 'mu':E/(2*(1 + nu)),
              'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
              'rho':0.00144,
-             'radius':0.5,
+             'radius':0.4,
              'em_B':Constant( (0.0,0.005,0.0)),
              'contact_penalty': 500.0,
              'dissipation':0.01,
@@ -29,10 +29,10 @@ defaults = { 'mu':E/(2*(1 + nu)),
              }
 props = [ {} for i in endpts ]
 for i in xrange(sheets[0].NX,sheets[0].NX+sheets[0].NY):
-    props[i]['radius'] = 0.7
+    props[i]['radius'] = 0.6
     props[i]['em_bc_r_0'] = 0.001
     props[i]['em_bc_J_0'] = 0.0
-Nelems = [ 40 for i in endpts ]
+Nelems = [ 30 for i in endpts ]
 
 warp = Warp(endpts,props,defaults, Nelems, MonolithicProblem, order = (1,1))
 
@@ -68,6 +68,9 @@ cpairs.extend((i,len(endpts)-1) for i in xrange(len(endpts)-1))
 warp.create_contacts(pairs=cpairs,cutoff=1.5)
 
 
+warp.load("data/em_defo_1")
+outputcnt = 202
+
 output()
 
 bound_all = CompiledSubDomain("on_boundary")
@@ -92,17 +95,17 @@ def sys(time):
 
 
 Tmax=5.0
-NT = 500
+NT = 1000
 h = Tmax/NT
 dirk = DIRK_Monolithic(h,LDIRK[1], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
                        warp.assemble_form('M','W'))
 # warp.CG.OutputFile("post/impact/gammaC.pvd" )
 for t in xrange(NT):
-    if t%3==0:
+    if t%5==0:
         warp.create_contacts(pairs=cpairs,cutoff=1.5)
     dirk.march()
-    if t%5==0:
+    if t%10==0:
         output()
 
 embed()

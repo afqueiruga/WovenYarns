@@ -7,7 +7,7 @@ Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
 
 sheets = [
-    Geometries.PlainWeaveFibrils(8,25.4,25.4, 8,25.4,25.4, 0.0,0.4, [ 2 ],0.81)
+    Geometries.PlainWeaveFibrils(8,25.4,25.4, 8,25.4,25.4, 0.0,0.8, [ 2 ],1.21)
     ]
 
 endpts = []
@@ -20,14 +20,18 @@ nu = 0.0
 defaults = { 'mu':E/(2*(1 + nu)),
              'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
              'rho':0.00144,
-             'radius':0.3,
+             'radius':0.6,
              'em_B':Constant((0.0,0.0,0.0)),
-             'contact_penalty':100.0,
+             'contact_penalty':5.0,
              'dissipation':0.01
              }
 props = [ {} for i in endpts ]
 props[-1] = { 'radius':6.0, 'dissipation':0.0, 'rho':0.01 }
-Nelems = [ 40 for i in endpts ]
+Nelems = [ 20 for i in endpts ]
+for i in xrange(np.sum(sheets[0].pattern)*(sheets[0].NX/2-1),np.sum(sheets[0].pattern)*(sheets[0].NX/2+1)):
+    Nelems[i]=60
+for i in xrange(np.sum(sheets[0].pattern)*(sheets[0].NY/2-1),np.sum(sheets[0].pattern)*(sheets[0].NY/2+1)):
+    Nelems[np.sum(sheets[0].pattern)*(sheets[0].NX) + i]= 60
 Nelems[-1] = 1
 
 warp = Warp(endpts,props,defaults, Nelems, DecoupledProblem)
@@ -66,7 +70,7 @@ warp.create_contacts(pairs=cpairs,cutoff=6.5)
 output()
 
 
-Tmax=0.25
+Tmax=0.5
 NT = 1000
 h = Tmax/NT
 
@@ -89,5 +93,7 @@ for t in xrange(NT):
     if t%1==0:
         warp.create_contacts(pairs=cpairs,cutoff=6.5)
     dirk.march()
-    if t%5==0:
+    if t%10==0:
         output()
+
+embed()

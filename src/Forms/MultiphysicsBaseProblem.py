@@ -176,7 +176,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
               - inner(tVol.dx(orientation),em_sig*(vB_ref))
 
             em_Egal = inv(F).T*(-Vol.dx(orientation) + vB_ref)*Ez
-            em_J = em_sig*em_Egal
+            em_J = 1/det(F)*F*em_sig*F.T*em_Egal
             
             
             # Thermal Form
@@ -202,8 +202,8 @@ class MultiphysicsBaseProblem(ProblemDescription):
             p_t1_1_Loc =  weight*J0*dot(Constant((0.0,1.0,0.0)),F*S*Ez)*ds(2)
             p_t2_1_Loc =  weight*J0*dot(Constant((0.0,0.0,1.0)),F*S*Ez)*ds(2)
 
-            p_J_0_Loc = -weight*J0*dot(Ez,em_J)*ds(1)
-            p_J_1_Loc =  weight*J0*dot(Ez,em_J)*ds(2)
+            p_J_0_Loc = -weight*J0*dot(ey,em_J)*ds(1)
+            p_J_1_Loc =  weight*J0*dot(ey,em_J)*ds(2)
 
             f_I_Loc = weight*J0*em_J
             f_Pi1_Loc = weight*J0*F*S*Ez
