@@ -3,6 +3,45 @@ These were all generated with the mathematica notebooks.
 They're here because they're like 4k characters long...
 """
 
+qhh_plain_0 = (
+    (
+        " x[0]*sq",
+        "0",
+        "A1*sin(x[0]*p)"
+    ),
+    (
+        "0.",
+        "-1. + (1.1 + 1.*sq)/sqrt(pow(1.1 + 1.*sq,2))",
+        "0."
+    ),
+    (
+        "(A1*p*(-1.1 - 1.*sq)*cos(x[0]*p))/(sqrt(pow(1.1 + 1.*sq,2))*sqrt((1.0000000000000002*pow(1.1 + 2.1*sq + 1.*pow(sq,2) + 0.1*sqrt(pow(1.1 + 1.*sq,2)),2))/pow(1.1 + 1.*sq,2) + 1.*pow(A1,2)*pow(p,2)*pow(cos(x[0]*p),2)))",
+        "0.",
+        "-1. + (0.1*(11. + 21.*sq + 10.*pow(sq,2) + 1.*sqrt(pow(1.1 + 1.*sq,2))))/(sqrt(pow(1.1 + 1.*sq,2))*sqrt((1.0000000000000002*pow(1.1 + 2.1*sq + 1.*pow(sq,2) + 0.1*sqrt(pow(1.1 + 1.*sq,2)),2))/pow(1.1 + 1.*sq,2) + 1.*pow(A1,2)*pow(p,2)*pow(cos(x[0]*p),2)))"
+    )
+)
+
+qhh_plain_1 = (
+    (
+"0",
+"x[1]*sq",
+"A1*sin(x[1]*p)"
+    ),
+    (
+        "0.",
+"(A1*p*(-1.1 - 1.*sq)*cos(x[1]*p))/(sqrt(pow(1.1 + 1.*sq,2))*sqrt((1.0000000000000002*pow(1.1 + 2.1*sq + 1.*pow(sq,2) + 0.1*sqrt(pow(1.1 + 1.*sq,2)),2))/pow(1.1 + 1.*sq,2) + 1.*pow(A1,2)*pow(p,2)*pow(cos(x[1]*p),2)))",
+"-1. + (0.1*(11. + 21.*sq + 10.*pow(sq,2) + 1.*sqrt(pow(1.1 + 1.*sq,2))))/(sqrt(pow(1.1 + 1.*sq,2))*sqrt((1.0000000000000002*pow(1.1 + 2.1*sq + 1.*pow(sq,2) + 0.1*sqrt(pow(1.1 + 1.*sq,2)),2))/pow(1.1 + 1.*sq,2) + 1.*pow(A1,2)*pow(p,2)*pow(cos(x[1]*p),2)))"
+
+    ),
+    (
+"1. + (-1.1 - 1.*sq)/sqrt(pow(1.1 + 1.*sq,2))",
+"0.",
+"0."
+    )
+    )
+    
+
+
 qhh_stockinette2 = (
 	(
 "x[0]*sq + (0.5*A1*p*y1*sin(0.5*x[0]*p))/sqrt(pow(1.1 + 1.*sq + 1.*o*p*cos(x[0]*p),2) + 0.25*pow(A1,2)*pow(p,2)*pow(sin(0.5*x[0]*p),2)) + o*sin(x[0]*p) + (A2*p*y2*(1.1 + 1.*sq + 1.*o*p*cos(x[0]*p))*sin(x[0]*p))/(sqrt(pow(1.1 + 1.*sq + 1.*o*p*cos(x[0]*p),2) + 0.25*pow(A1,2)*pow(p,2)*pow(sin(0.5*x[0]*p),2))*sqrt((0.010000000000000004*pow(11. + 21.*sq + 10.*pow(sq,2) + 21.*o*p*cos(x[0]*p) + 20.*o*p*sq*cos(x[0]*p) + 10.*pow(o,2)*pow(p,2)*pow(cos(x[0]*p),2) + 2.5*pow(A1,2)*pow(p,2)*pow(sin(0.5*x[0]*p),2) + 1.*sqrt(pow(1.1 + 1.*sq + 1.*o*p*cos(x[0]*p),2) + 0.25*pow(A1,2)*pow(p,2)*pow(sin(0.5*x[0]*p),2)),2))/(1.2100000000000002 + 2.2*sq + 1.*pow(sq,2) + o*p*(2.2 + 2.*sq)*cos(x[0]*p) + 1.*pow(o,2)*pow(p,2)*pow(cos(x[0]*p),2) + 0.25*pow(A1,2)*pow(p,2)*pow(sin(0.5*x[0]*p),2)) + (0.25*pow(A1,2)*pow(A2,2)*pow(p,4)*pow(sin(0.5*x[0]*p),2)*pow(sin(x[0]*p),2))/(pow(1.1 + 1.*sq + 1.*o*p*cos(x[0]*p),2) + 0.25*pow(A1,2)*pow(p,2)*pow(sin(0.5*x[0]*p),2)) + (0.25*pow(A2,2)*pow(p,2)*pow((2.2 + 2.*sq)*sin(x[0]*p) + 1.*o*p*sin(2*x[0]*p),2))/(1.2100000000000002 + 2.2*sq + 1.*pow(sq,2) + o*p*(2.2 + 2.*sq)*cos(x[0]*p) + 1.*pow(o,2)*pow(p,2)*pow(cos(x[0]*p),2) + 0.25*pow(A1,2)*pow(p,2)*pow(sin(0.5*x[0]*p),2))))",

@@ -151,14 +151,8 @@ class PlainWeaveFibrils(TextileGeometry):
         for i in xrange(istart,istart+self.NX):
             for j in xrange(np.sum(self.pattern)):
                 fib = warp.fibrils[i*np.sum(self.pattern)+j]
-                qhh = ( (
-                     " x[0]*sq",
-                     "0",
-                     "A1*sin(x[0]*p)"
-                    ),
-                    ( "0","0","0"),
-                    ( "0","0","0")
-                    )
+
+                qhh = Geometry_Curves.qhh_plain_0
                 temp_field = Function(fib.problem.spaces['V'])
                 for fix in xrange(3):
                     temp_field.interpolate(Expression(
@@ -173,18 +167,11 @@ class PlainWeaveFibrils(TextileGeometry):
         for i in xrange(istart+self.NX,istart+(self.NX+self.NY)):
             for j in xrange(np.sum(self.pattern)):
                 fib = warp.fibrils[i*np.sum(self.pattern)+j]
-                vqhh = ((
-                     "0",
-                    " x[1]*sq",
-                    "A1*sin(x[1]*p)"
-                    ),
-                    ( "0","0","0"),
-                    ( "0","0","0")
-                    )
+                qhh = Geometry_Curves.qhh_plain_1
                 temp_field = Function(fib.problem.spaces['V'])
                 for fix in xrange(3):
                     temp_field.interpolate(Expression(
-                        vqhh[fix],
+                        qhh[fix],
                         sq = -(self.restY-self.setY)/self.restY,
                         p=np.pi/self.restY *(self.NX)/2.0,
                         A1=(-1.0 if i%2==1 else 1.0)*self.height

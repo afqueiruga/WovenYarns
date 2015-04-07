@@ -143,7 +143,7 @@ class MultiphysicsProblem(ProblemDescription):
 
             # Electrical Potential
             V_FLoc = -inner(tVol.dx(orientation), em_sig*Vol.dx(orientation)) \
-              - inner(tVol.dx(orientation)*Ez,em_sig*(F.T*cross(v,em_B)))
+              + inner(tVol.dx(orientation)*Ez,em_sig*(F.T*cross(v,em_B)))
             # Current force
             em_I = em_sig*Vol.dx(orientation)
             ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )

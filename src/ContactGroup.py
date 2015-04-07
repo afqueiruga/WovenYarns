@@ -53,8 +53,9 @@ class ContactGroup():
         meB = self.current_meshes[b]
         pt = self.trees[a]
         elem_pairs = []
+        cutoff = np.max((1.2*(self.radii[a]+self.radii[b]),self.cutoff))
         for i,c in enumerate(cells(meB)):
-            ent = pt.compute_proximity_collisions(c.midpoint(),self.cutoff)
+            ent = pt.compute_proximity_collisions(c.midpoint(), cutoff)
             for e in ent:
                 elem_pairs.append([e,i])
         if len(elem_pairs)==0:

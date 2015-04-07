@@ -16,11 +16,12 @@ for s in sheets:
 
 E = 1.26 #MPa
 nu = 0.0
+phi = np.pi/4.0
 defaults = { 'mu':E/(2*(1 + nu)),
              'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
              'rho':0.00144,
              'radius':0.4,
-             'em_B':Constant( (0.0,0.005,0.0)),
+             'em_B':Constant( (0.0,0.005*np.cos(phi),0.005*np.sin(phi))),
              'contact_penalty': 500.0,
              'dissipation':0.01,
              'contact_em': 1.0,
@@ -68,8 +69,8 @@ cpairs.extend((i,len(endpts)-1) for i in xrange(len(endpts)-1))
 warp.create_contacts(pairs=cpairs,cutoff=1.5)
 
 
-warp.load("data/em_defo_1")
-outputcnt = 202
+# warp.load("data/em_defo_1")
+# outputcnt = 202
 
 output()
 

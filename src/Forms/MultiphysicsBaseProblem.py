@@ -170,22 +170,29 @@ class MultiphysicsBaseProblem(ProblemDescription):
             FInt = derivative(-Psi,wx,tw)
 
             # Voltage Form
-            vB_ref = dot(F.T*cross(v,em_B),Ez)
-            # It shouldn't be sig in here, but it actually doesn't matter
-            V_FLoc = tVol.dx(orientation) * em_sig * Vol.dx(orientation) \
-              - inner(tVol.dx(orientation),em_sig*(vB_ref))
+            F0 = I + outer(q.dx(orientation),Ez) + outer(h1,E1) + outer(h2, E2 )
+            ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
 
-            em_Egal = inv(F).T*(-Vol.dx(orientation) + vB_ref)*Ez
-            em_J = 1/det(F)*F*em_sig*F.T*em_Egal
-            
+            vB_ref = dot(F0.T*cross(vq,em_B),Ez)
+            # It should be perm in here, but it actually doesn't matter
+            V_FLoc = tVol.dx(orientation)  * Vol.dx(orientation) \
+              - inner(tVol.dx(orientation),(vB_ref))
+
+              # what's up with these equations?
+              # OK, em_Egal is in the current configuration,
+              # Oh, but the texturing of sigma might make J and E not allign...
+              # But... inv(F).T vs 1/J F? I think they line up
+
+            em_Egal = inv(F0).T*(-Vol.dx(orientation) + vB_ref)*Ez
+            em_J = 1/det(F0)*F0*em_sig*(-Vol.dx(orientation) + vB_ref)*Ez
+            em_Joule = 1/det(F0)*(-Vol.dx(orientation) + vB_ref)*em_sig*(-Vol.dx(orientation) + vB_ref)
             
             # Thermal Form
             Gradv = outer(v.dx(orientation),Ez) + outer(vh1,E1) + outer(vh2,E2)
             S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
-            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*dot(em_Egal,em_J)
+            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*em_Joule
 
             # Forces
-            ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
             FExt = inner(tv,cross(em_J,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
 
             # Neumann type BCs:
