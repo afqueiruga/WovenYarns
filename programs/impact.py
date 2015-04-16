@@ -5,33 +5,35 @@ from IPython import embed
 """
 Lets go all out and shoot a smaller fibril at a fabric sheet!
 """
-
 sheets = [
-    Geometries.PlainWeaveFibrils(8,25.4,25.4, 8,25.4,25.4, 0.0,0.8, [ 2 ],1.21)
+    Geometries.PlainWeaveFibrils(32,50.8,50.8, 32,50.8,50.8, 0.0,0.41, [ 1 ],0.81)
     ]
 
 endpts = []
 for s in sheets:
     endpts.extend( s.endpts() )
-endpts.append([ [0, 0, 6.9],[ 0, 0, 6.5] ])
+endpts.append([ [0, 0, 18.0],[ 0, 0, 12.25] ])
 
 E = 1.26 #MPa
-nu = 0.0
+nu = 0.2
+Bmag = 0.001
+phi = np.pi/4.0
 defaults = { 'mu':E/(2*(1 + nu)),
              'lambda': E*nu/((1 + nu)*(1 - 2*nu)),
-             'rho':0.00144,
-             'radius':0.6,
-             'em_B':Constant((0.0,0.0,0.0)),
-             'contact_penalty':5.0,
-             'dissipation':0.01
+             'rho': 0.0000144, #0.00144,
+             'radius':0.4,
+             'em_B':Constant((0.0,Bmag*np.cos(phi),Bmag*np.sin(phi))),
+             'contact_penalty':20.0,
+             'dissipation':0.001
              }
 props = [ {} for i in endpts ]
-props[-1] = { 'radius':6.0, 'dissipation':0.0, 'rho':0.01 }
-Nelems = [ 20 for i in endpts ]
-for i in xrange(np.sum(sheets[0].pattern)*(sheets[0].NX/2-1),np.sum(sheets[0].pattern)*(sheets[0].NX/2+1)):
-    Nelems[i]=60
-for i in xrange(np.sum(sheets[0].pattern)*(sheets[0].NY/2-1),np.sum(sheets[0].pattern)*(sheets[0].NY/2+1)):
-    Nelems[np.sum(sheets[0].pattern)*(sheets[0].NX) + i]= 60
+
+props[-1] = { 'radius':12.0, 'dissipation':0.0, 'rho':0.01 }
+props[-1]['em_bc_r_0'] = 0.001
+
+
+
+Nelems = [ 80 for i in endpts ]
 Nelems[-1] = 1
 
 warp = Warp(endpts,props,defaults, Nelems, DecoupledProblem)
@@ -71,7 +73,7 @@ output()
 
 
 Tmax=0.5
-NT = 1000
+NT = 500
 h = Tmax/NT
 
 zero = Constant((0.0,0.0,0.0)) #, 0.0,0.0,0.0, 0.0,0.0,0.0))

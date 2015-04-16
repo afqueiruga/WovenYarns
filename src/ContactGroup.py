@@ -13,7 +13,7 @@ the meshes at once for efficiency.
 truncate = np.vectorize(lambda x: 0.0 if x<0.0 else 1.0 if x>1.0 else x, otypes=[np.double])
 
 class ContactGroup():
-    def __init__(self,reference_meshes,current_meshes=None,pairs=None,radii=None, cutoff=0.15):
+    def __init__(self,reference_meshes,current_meshes=None,pairs=None,radii=None, cutoff=0.15,candidate_buffer=0.1):
         self.reference_meshes = reference_meshes
         if current_meshes is not None:
             self.current_meshes = current_meshes
@@ -32,6 +32,7 @@ class ContactGroup():
         self.radii = radii
         
         self.chi_n_max = 10
+        self.candidate_buffer = candidate_buffer
         
     def CreateTables(self, current_meshes = None):
         if current_meshes is not None:
@@ -53,7 +54,9 @@ class ContactGroup():
         meB = self.current_meshes[b]
         pt = self.trees[a]
         elem_pairs = []
-        cutoff = np.max((1.2*(self.radii[a]+self.radii[b]),self.cutoff))
+
+        minsearch = (self.radii[a]+self.radii[b]+self.candidate_buffer)
+        cutoff = np.max((minsearch,self.cutoff))
         for i,c in enumerate(cells(meB)):
             ent = pt.compute_proximity_collisions(c.midpoint(), cutoff)
             for e in ent:
@@ -85,7 +88,7 @@ class ContactGroup():
                                         ref_vertsA[ref_cellsA[mid,0]],ref_vertsA[ref_cellsA[mid,1]],
                                         ref_vertsB[ref_cellsB[sid,0]],ref_vertsB[ref_cellsB[sid,1]]
                 )
-            if np.min(disttable) < 1.2*(self.radii[a]+self.radii[b]) :
+            if np.min(disttable) < minsearch :
                 stables.append(stable)
                 xtables.append(xtable)
                 Xtables.append(Xtable)

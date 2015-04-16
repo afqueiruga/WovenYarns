@@ -66,7 +66,7 @@ class Warp():
                           fname.format(self.fibril_pairs[j][0],self.fibril_pairs[j][1],"gamma") )
 
     
-    def create_contacts(self,pairs=None,cutoff=0.3):
+    def create_contacts(self,pairs=None,cutoff=0.3,candidate_buffer=0.1):
         """
         Create all of the neccessary contact pairs.
         If a list of pairs isn't specified, just create the n^2 list.
@@ -81,7 +81,8 @@ class Warp():
             for ix in xrange(vv.shape[1]):
                 fib.current_mesh.coordinates()[ix] += vv[:,ix]
             # fib.current_mesh.move(fib.problem.fields['wx'].sub(0))
-        self.CG.cutoff = cutoff    
+        self.CG.cutoff = cutoff
+        self.CG.candidate_buffer = candidate_buffer
         self.CG.CreateTables([f.current_mesh for f in self.fibrils])
     
         # for i,p in enumerate(pairs):

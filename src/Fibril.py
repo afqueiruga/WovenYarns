@@ -75,7 +75,7 @@ class Fibril():
         vf = File(fname,"ascii")
         vf << hullmesh
 
-    def WriteSolid(self,fname,i=0,NT=16):
+    def WriteSolid(self,fname,i=0,NT=8):
         fields = self.problem.split_for_io()
 
         qN = fields['q'].compute_vertex_values()
