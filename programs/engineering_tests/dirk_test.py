@@ -20,7 +20,9 @@ props =  [{
     'radius':radius,
     'rho':2.0,
     'em_B':Constant((B*np.cos(Phi),B*np.sin(Phi),0.0)),
-    'dissipation':0.01
+    'em_seebeck':0.1,
+    'dissipation':0.01,
+    'mu_alpha':-0.01
     }]
 
 endpts = [ [[-1.0,0.0,0.0],[1.0,0.0,0.0]] ]

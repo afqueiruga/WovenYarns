@@ -17,6 +17,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
         'T_k': 1.0,
         'em_B':Constant((0.0,0.0,0.0)),
         'em_sig':10.0,
+        'em_seebeck':0.0,
         'radius':0.15,
         'f_dens_ext':Constant((0.0,0.0,0.0)),
         'dissipation':1.0e-1,
@@ -98,6 +99,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
 
         em_B     = PROP['em_B']
         em_sig   = PROP['em_sig']
+        em_seebeck   = PROP['em_seebeck']
 
         radius   = PROP['radius']
 
@@ -176,7 +178,8 @@ class MultiphysicsBaseProblem(ProblemDescription):
             vB_ref = dot(F0.T*cross(vq,em_B),Ez)
             # It should be perm in here, but it actually doesn't matter
             V_FLoc = tVol.dx(orientation)  * Vol.dx(orientation) \
-              - inner(tVol.dx(orientation),(vB_ref))
+              - inner(tVol.dx(orientation),(vB_ref)) \
+              - inner(tVol.dx(orientation),-em_seebeck*T.dx(orientation))
 
               # what's up with these equations?
               # OK, em_Egal is in the current configuration,
@@ -190,7 +193,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
             # Thermal Form
             Gradv = outer(v.dx(orientation),Ez) + outer(vh1,E1) + outer(vh2,E2)
             S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
-            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*em_Joule
+            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*em_Joule + tT*inner(S,Gradv)
 
             # Forces
             FExt = inner(tv,cross(em_J,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
