@@ -20,7 +20,9 @@ props =  [{
     'radius':radius,
     'rho':2.0,
     'em_B':Constant((B*np.cos(Phi),B*np.sin(Phi),0.0)),
-    'dissipation':0.01
+    'em_seebeck':0.1,
+    'dissipation':0.01,
+    'mu_alpha':-0.01
     }]
 
 endpts = [ [[-1.0,0.0,0.0],[1.0,0.0,0.0]] ]
@@ -89,12 +91,13 @@ def solve(order,NT):
     dirk = DIRK_Monolithic(h,LDIRK[order], sys,warp.update,apply_BCs,
                        warp.fields['wx'].vector(),warp.fields['wv'].vector(),
                        warp.assemble_form('M','W'))
-    # warp.output_states("post/dirk/dirk_{0}_"+str(0)+".pvd",0)
-    # warp.output_solids("post/dirk/mesh_{0}_"+str(0)+".pvd",0)
+    # warp.output_states("post/dirk_more/dirk_{0}_"+str(0)+".pvd",0)
+    # warp.output_solids("post/dirk_more/mesh_{0}_"+str(0)+".pvd",0)
     for t in xrange(NT):
         dirk.march()
-        # warp.output_states("post/dirk/dirk_{0}_"+str(t+1)+".pvd",0)
-        # warp.output_solids("post/dirk/mesh_{0}_"+str(t+1)+".pvd",0)
+        # if t%10==0:
+            # warp.output_states("post/dirk_more/dirk_{0}_"+str(t+1)+".pvd",0)
+            # warp.output_solids("post/dirk_more/mesh_{0}_"+str(t+1)+".pvd",0)
 
         for g,p in enumerate(probes):
             if p[2]=='x':
@@ -103,16 +106,38 @@ def solve(order,NT):
                 warp.fibrils[0].problem.fields['wv'].eval(weval,p[0])
             time_series[t+1,g] = weval[p[1]]
         times[t+1] = (t+1)*h
+        print "Step ",t,"/",NT
+    f = open("dirkdata_3","a")
+    f.write("{0} {1} ".format(order,NT))
+    for g in xrange(4):
+        f.write( "{0} ".format(time_series[-1,g] ) )
+    f.write("\n")
+    f.close()
     return (times,time_series,h,order)
 
 
 Tmax = 5.0
-# NTS = [ [100,200,300,400,500,600,800,1000, 1200, 1400, 1600,1800, 2000, 2200, 2400],[30,50,70,90,110,120,130,140,160,180,200,220, 240, 260, 280,300, 320, 340, 360], [10,20,40,50,60,70,80,90,110,130,150,170, 190, 210, 230,250, 270, 290, 310] ]
-NTS = [ [ 5000,7000,9000,11000,13000 ], [ 500,600,700,800] ]
-orders = [ 1,2 ]
-# orders = [1,2,3]
-# NTS = [ [ 110 ] ]
-# orders = [ 2 ]
+
+# NTS = [[ 125, 150 ]]
+# NTS = [[ 75, 175 ]]
+# NTS = [[ 250, 275, 325, 375, 425 ]]
+# NTS = [[ 350,450,550 ]]
+# NTS = [[ 75,150,200,250,350 ]]
+# NTS = [[400,450,500],[100,150,200,250,300,1000]]
+# NTS = [[ 550,600,650 ], [ 350, 400, 450, 500 ]]
+# NTS = [[ 700,750,800,850 ]]
+# NTS = [[ 900,950 ]]
+# NTS = [[ 1150,1200,1250 ]]
+# NTS = [[ 1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800 ]]
+orders = [ 2 ]
+# NTS = [[ 725,775,825,875, 925 ]]
+NTS = [[ 975, 1025 ]]
+# NTS = [[525,550,575,600]]
+# NTS = [[ 1500 ]]
+# orders = [ 3 ]
+#NTS = [[500,1000,2500,5000,7500,9000,10000 ]]
+# NTS = [[ 8000,8500,9500 ]]
+# orders = [1]
 
 all_series = [ ]
 
@@ -134,7 +159,20 @@ def make_plots(all_series):
         for series in all_series:
             plt.loglog([ x[2] for x in series[1]],
                         [ np.abs(x[1][-1,g]-exact) for x in series[1] ],'-+')
-
+def make_plots_time(all_series):
+    ylabels = ["Vertical displacement y(0) (mm)","Lateral Displacement z(0.5) (mm)",
+               "Temperature T(0.5) (K)", "Voltage V(0.5) (V)" ]
+    font = {'family' : 'normal',
+            'size'   : 16}
+    matplotlib.rc('font', **font)
+    for g in xrange(len(probes)):
+        plt.figure()
+        plt.xlabel("Time t (ms)")
+        plt.ylabel(ylabels[g])
+        for series in all_series:
+            for ts,ys,o,h in series[1]:
+                plt.plot(ts,ys[:,g])
+    
 def make_final_plots(NTS,points):
     hs = [ [Tmax / NT for NT in nts] for nts in NTS]
     for probe in points:
@@ -178,8 +216,8 @@ def trunk(i,n):
      for l in pts:
          l[i] = l[i][n:]
 
-print points
-embed()
+# print points
+# embed()
 
 # def compute_convergence(all_series):
 #     import scipy.stats
@@ -191,10 +229,10 @@ embed()
 #                                           [ np.log(np.abs(x[1][-1,g]-exact)) for x in series[1][:(-1 if ix==len(all_series)-1 else -2)] ]))[0],
 #         print ""
 
-compute_convergence(NTS,points)
+# compute_convergence(NTS,points)
 
-make_plots(all_series)
-plt.show()
+# make_plots(all_series)
+# plt.show()
 
 
 embed()

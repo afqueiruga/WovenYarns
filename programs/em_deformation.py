@@ -6,13 +6,13 @@ Setup
 This file solves for the deformation of a textile in a B field.
 
 It must be run from the root directory,
-
+```bash
 python programs/em_deformation.py
-
+```
 You will have to make sure the output directory exists,
-
+```bash
 mkdir post/em_deformation
-
+```
 Firstly, you need to import the library:
 """
 from src import *
@@ -22,7 +22,8 @@ from IPython import embed
 Now, set up the geometry object:
 """
 sheets = [
-    Geometries.PlainWeaveFibrils(8,12.5,10.0, 8,12.5,10.0, 0.0,0.81, [ 1 ],0.81)
+    Geometries.PlainWeaveFibrils(8,12.5,10.0, 8,12.5,10.0,
+                                 0.0,0.81, [ 1 ],0.81)
     ]
 
 endpts = []
@@ -109,8 +110,11 @@ Time stepper setup
 Set up all of the boundary conditions.
 """
 bound_all = CompiledSubDomain("on_boundary")
-bound_sides = CompiledSubDomain("( near(x[0],y) || near(x[0],-y) ) && on_boundary",y=sheets[0].restX)
-bound_one_side = CompiledSubDomain("( near(x[0],y) ) && on_boundary",y=sheets[0].restX)
+bound_sides = CompiledSubDomain(
+    "( near(x[0],y) || near(x[0],-y) ) && on_boundary",
+    y=sheets[0].restX)
+bound_one_side = CompiledSubDomain("( near(x[0],y) ) && on_boundary",
+                                   y=sheets[0].restX)
 
 subq = MultiMeshSubSpace(warp.spaces['W'],0)
 subT = MultiMeshSubSpace(warp.spaces['W'],3)
