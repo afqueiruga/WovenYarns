@@ -16,7 +16,7 @@ props = [ { 'radius' : 0.1 },
             { 'mu' : 1.0 },
             {} ]
 
-warp = Warp(endpts, props, defaults, MultiphysicsProblem)
+warp = Warp(endpts, props, defaults, [10,10,10], MultiphysicsProblem)
 
 warp.output_states("src/unit_tests/warp_{0}_.pvd",0)
 warp.output_surfaces("src/unit_tests/warp_mesh_{0}_.pvd",0)
@@ -38,3 +38,8 @@ plt.show()
 
 plt.spy(warp.mcache['AX'].array())
 plt.show()
+
+F = warp.assemble_form('F','W')
+print F
+for l in F:
+    print l

@@ -13,12 +13,13 @@ default_properties = {
     'em_B':Constant((0.0,0.0,0.0)),
     'em_I':1.0,
     'radius':0.15,
-    'f_dens_ext':Constant((0.0,0.0,0.0))
+    'f_dens_ext':Constant((0.0,0.0,0.0)),
+    'dissipation':1.0e-1
 }
 
 class CurrentBeamProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
-    def __init__(self,mesh,properties, buildform=True, orientation=0, order=(1,)):
+    def __init__(self,mesh,properties, boundaries=None,buildform=True, orientation=0, order=(1,)):
         if properties.has_key("orientation"):
             orientation = properties["orientation"]
             properties.pop("orientation",None)
@@ -42,7 +43,7 @@ class CurrentBeamProblem(ProblemDescription):
         self.orientation = orientation
         self.order = order
         
-        ProblemDescription.__init__(self,mesh,p,False)
+        ProblemDescription.__init__(self,mesh,p,boundaries,False)
         
         if not properties.has_key("X0"):
             X0 = Function(self.spaces['V'])
@@ -101,6 +102,7 @@ class CurrentBeamProblem(ProblemDescription):
         radius   = PROP['radius']
 
         f_dens_ext = PROP['f_dens_ext']
+        dissipation = PROP['dissipation']
         
         orientation = self.orientation
         Ez = PROP['Ez']
@@ -139,7 +141,7 @@ class CurrentBeamProblem(ProblemDescription):
 
             ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
             
-            FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-1.0e-1*v) + inner(tv, f_dens_ext)
+            FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
             
             # Finalize
             FLoc = weight*J0*( FInt + FExt )*dx
@@ -150,9 +152,9 @@ class CurrentBeamProblem(ProblemDescription):
         # Contact forms
         xr = X0 + q
         dist = sqrt(dot(jump(xr),jump(xr)))
-        overlap = (2.0*Constant(radius)-dist)
+        overlap = (2.0*avg(radius)-dist)
         ContactForm = -dot(jump(tvq),
-                        conditional(ge(overlap,0.0), -40.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
+                        conditional(ge(overlap,0.0), -4.0*overlap,0.0)*jump(xr)/dist)*dc(0, metadata={"num_cells": 2,"special":"contact"})
 
         
         # Take the functional derivatives of everything

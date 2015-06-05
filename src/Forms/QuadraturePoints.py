@@ -70,15 +70,22 @@ if __name__=="__main__":
         def plot_points(pts):
             plt.xlim(-2,2)
             plt.ylim(-2,2)
-            plt.plot([ z1 for z1,z2,w in pts], [z2 for z1,z2,w in pts],'x')
-        plot_points(RectOuterProd(2,3))
-        plt.figure()
-        plot_points(RectOuterProd(2))
-        plt.figure()
+            ptsx = np.cos(np.linspace(0.0,2.0*np.pi,100))
+            ptsy = np.sin(np.linspace(0.0,2.0*np.pi,100))
+            plt.axis('equal')
+            plt.plot(ptsx,ptsy,'k')
+            plt.plot([ z1 for z1,z2,w in pts], [z2 for z1,z2,w in pts],'xk')
+        #plot_points(RectOuterProd(2,3))
+        #plt.figure()
+        #plot_points(RectOuterProd(2))
+        #plt.figure()
+
         plot_points(CircCart2D[4])
         plt.figure()
+    
         plot_points(CircCart2D[8])
         plt.figure()
+    
         plot_points(CircCart2D[16])
         plt.show()
     

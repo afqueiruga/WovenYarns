@@ -6,13 +6,15 @@ class ProblemDescription():
     a collection FunctionSpaces and FEniCS form, enumerating
     inputs, outputs, etc.
     """
-    def __init__(self, mesh, properties, buildform = True):
+    def __init__(self, mesh, properties, boundaries=None, buildform = True):
         """"
         Properties should be a dictionary of double values or of FEM
         spaces on the mesh. If the properties is a constant, it will
         be turned into a space of type Real. 
         """
         self.mesh = mesh
+        self.boundaries = boundaries
+
         self.spaces = self.Declare_Spaces()
         if not self.spaces.has_key("R"):
             self.spaces["R"] = FunctionSpace(self.mesh,"Real",0)
@@ -28,7 +30,7 @@ class ProblemDescription():
         self.fields = self.Declare_Fields()
         if buildform:
             self.forms = self.Build_Forms()
-
+        
     def Declare_Spaces(self):
         " Tabulate all function spaces used. By default need the space of real "
         return {"R" : FunctionSpace(self.mesh,"Real",0)}

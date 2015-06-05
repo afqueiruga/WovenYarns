@@ -13,7 +13,8 @@ default_properties = {
     'em_B':Constant((0.0,0.0,0.0)),
     'em_sig':10.0,
     'radius':0.15,
-    'f_dens_ext':Constant((0.0,0.0,0.0))
+    'f_dens_ext':Constant((0.0,0.0,0.0)),
+    'dissipation':1.0e-1
 }
 class MultiphysicsProblem(ProblemDescription):
     """ This creates a multiphysics problem with a monolithic space """
@@ -98,6 +99,7 @@ class MultiphysicsProblem(ProblemDescription):
         radius   = PROP['radius']
 
         f_dens_ext = PROP['f_dens_ext']
+        dissipation = PROP['dissipation']
         
         orientation = self.orientation
         Ez = PROP['Ez']
@@ -141,12 +143,12 @@ class MultiphysicsProblem(ProblemDescription):
 
             # Electrical Potential
             V_FLoc = -inner(tVol.dx(orientation), em_sig*Vol.dx(orientation)) \
-              - inner(tVol.dx(orientation)*Ez,em_sig*(F.T*cross(v,em_B)))
+              + inner(tVol.dx(orientation)*Ez,em_sig*(F.T*cross(v,em_B)))
             # Current force
             em_I = em_sig*Vol.dx(orientation)
             ey = (Ez+q.dx(orientation)) /sqrt( inner(Ez+q.dx(orientation),Ez+q.dx(orientation)) )
             
-            FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-1.0e-1*v) + inner(tv, f_dens_ext)
+            FExt = -em_I*inner(tv,cross(ey,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
             
             # Finalize
             FLoc = weight*J0*( FInt + FExt + T_FLoc + V_FLoc )*dx
