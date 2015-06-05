@@ -108,7 +108,7 @@ def solve(order,NT):
         times[t+1] = (t+1)*h
         print "Step ",t,"/",NT
     f = open("dirkdata_3","a")
-    f.write("{0} ".format(NT))
+    f.write("{0} {1} ".format(order,NT))
     for g in xrange(4):
         f.write( "{0} ".format(time_series[-1,g] ) )
     f.write("\n")
@@ -119,11 +119,25 @@ def solve(order,NT):
 Tmax = 5.0
 
 # NTS = [[ 125, 150 ]]
-NTS = [[ 75, 175 ]]
+# NTS = [[ 75, 175 ]]
 # NTS = [[ 250, 275, 325, 375, 425 ]]
 # NTS = [[ 350,450,550 ]]
+# NTS = [[ 75,150,200,250,350 ]]
+# NTS = [[400,450,500],[100,150,200,250,300,1000]]
+# NTS = [[ 550,600,650 ], [ 350, 400, 450, 500 ]]
+# NTS = [[ 700,750,800,850 ]]
+# NTS = [[ 900,950 ]]
+# NTS = [[ 1150,1200,1250 ]]
+# NTS = [[ 1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800 ]]
 orders = [ 2 ]
-
+# NTS = [[ 725,775,825,875, 925 ]]
+NTS = [[ 975, 1025 ]]
+# NTS = [[525,550,575,600]]
+# NTS = [[ 1500 ]]
+# orders = [ 3 ]
+#NTS = [[500,1000,2500,5000,7500,9000,10000 ]]
+# NTS = [[ 8000,8500,9500 ]]
+# orders = [1]
 
 all_series = [ ]
 
@@ -202,8 +216,8 @@ def trunk(i,n):
      for l in pts:
          l[i] = l[i][n:]
 
-print points
-embed()
+# print points
+# embed()
 
 # def compute_convergence(all_series):
 #     import scipy.stats
@@ -215,10 +229,10 @@ embed()
 #                                           [ np.log(np.abs(x[1][-1,g]-exact)) for x in series[1][:(-1 if ix==len(all_series)-1 else -2)] ]))[0],
 #         print ""
 
-compute_convergence(NTS,points)
+# compute_convergence(NTS,points)
 
-make_plots(all_series)
-plt.show()
+# make_plots(all_series)
+# plt.show()
 
 
 embed()

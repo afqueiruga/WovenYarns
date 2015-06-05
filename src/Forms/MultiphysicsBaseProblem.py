@@ -168,6 +168,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
             mu_pt = mu+mu_alpha*T
             Psi = ((mu_pt/2)*(Ic - 3) - mu_pt*ln(J) + (lmbda/2)*(ln(J))**2)
 
+            
             # Take the Gateaux derivative of the strain energy to get internal force
             FInt = derivative(-Psi,wx,tw)
 
@@ -191,9 +192,12 @@ class MultiphysicsBaseProblem(ProblemDescription):
             em_Joule = 1/det(F0)*(-Vol.dx(orientation) + vB_ref)*em_sig*(-Vol.dx(orientation) + vB_ref)
             
             # Thermal Form
-            Gradv = outer(v.dx(orientation),Ez) + outer(vh1,E1) + outer(vh2,E2)
+            #Gradv = outer(v.dx(orientation),Ez) + outer(vh1,E1) + outer(vh2,E2)
             S = (mu_pt)*I+(-mu_pt+lmbda*ln(J))*inv(C).T
-            T_FLoc = -(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*em_Joule + tT*inner(S,Gradv)
+
+            # Take the derivative of the strain energy w.r.t temp to get change in energy
+            dPsidT = mu_alpha*(1.0/2.0*(Ic - 3) - ln(J) )
+            T_FLoc = (1.0/(rho*T_cp+dPsidT))*(-(tT.dx(orientation) * T_k * T.dx(orientation)) + tT*em_Joule) #tT*inner(S,Gradv)
 
             # Forces
             FExt = inner(tv,cross(em_J,em_B)) + inner(tv,-dissipation*v) + inner(tv, f_dens_ext)
@@ -223,7 +227,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
             FTherLoc = weight*J0*( T_FLoc ) * dx
             FElecLoc = weight*J0*( V_FLoc ) *dx + V_FBCLoc
             MMechLoc = weight*J0*( inner(tv,rho*dvdt) )*dx
-            MTherLoc = weight*J0*( inner(tT,rho*T_cp*dTdt) )*dx
+            MTherLoc = weight*J0*( inner(tT,    dTdt) )*dx
             
             FMechTot = FMechLoc if FMechTot is None else FMechTot + FMechLoc
             FTherTot = FTherLoc if FTherTot is None else FTherTot + FTherLoc
