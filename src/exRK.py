@@ -1,18 +1,42 @@
 import numpy as np
 from dolfin import *
 
+from IPython import embed
+
+"""
+Tableaus are from Butcher's Giant Book of Tableaus
+"""
 exRK_table = {
-    1 : {
+    '1' : {
         'a':np.array([ [0.0]], dtype=np.double),
         'b':np.array([ 1.0 ], dtype=np.double),
         'c':np.array([ 0.0 ], dtype=np.double)
         },
-    4 : {
+    'RK2-trap': {
+        'a':np.array([ [0.0,0.0],
+                       [1.0,0.0] ], dtype=np.double),
+        'b':np.array([ 0.5,0.5 ], dtype=np.double),
+        'c':np.array([ 0.0,1.0 ], dtype=np.double)
+        },
+    'RK2-mid': {
+        'a':np.array([ [0.0,0.0],
+                       [0.5,0.0] ], dtype=np.double),
+        'b':np.array([ 0.0,1.0 ], dtype=np.double),
+        'c':np.array([ 0.0,0.5 ], dtype=np.double)
+        },
+    'RK3-1': {
+        'a':np.array([ [0.0,    0.0,    0.0],
+                       [2.0/3.0,0.0,    0.0],
+                       [1.0/3.0,1.0/3.0,0.0] ], dtype=np.double),
+        'b':np.array([ 0.25,0.0,0.75 ], dtype=np.double),
+        'c':np.array([ 0.0,2.0/3.0,2.0/3.0 ], dtype=np.double)
+        },
+    'RK4' : {
         'a': np.array([ [ 0.0, 0.0, 0.0, 0.0 ],
                         [ 0.5, 0.0, 0.0, 0.0 ],
                         [ 0.0, 0.5, 0.0, 0.0 ],
                         [ 0.0, 0.0, 1.0, 0.0  ] ], dtype=np.double),
-        'b':np.array( [ 1.0/6.0, 2.0/3.0, 2.0/3.0, 1.0/6.0 ], dtype=np.double),
+        'b':np.array( [ 1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0 ], dtype=np.double),
         'c': np.array( [ 0.0, 0.5, 0.5, 1.0 ], dtype=np.double)
         }
     }
@@ -58,7 +82,8 @@ class exRK():
                 self.im_fields.append(f)
             else:
                 self.ex_fields.append(f)
-        
+    def DPRINT(*args):
+        pass
     def march(self,time=0.0):
         h = self.h
         RK_a = self.RK_a
@@ -72,35 +97,53 @@ class exRK():
                 f.vs = []
         
         for i in xrange(len(RK_c)):
-            print " Stage ",i," at ",RK_c[i]," with ai_=",RK_a[i,:]
+            self.DPRINT( " Stage ",i," at ",RK_c[i]," with ai_=",RK_a[i,:] )
+            # from IPython import embed
+            # embed()
             # Step 1: Calculate values of explicit fields at this step
             for f in self.ex_fields:
                 for s,v in zip(f.u,f.u0):
                     s[:] = v[:]
                 for j in xrange(i):
-                    f.DU[0] += h*RK_a[i,j]*f.ks[j][:] # Need to solve matrix
-                    if order == 2:
-                        f.u[1] += h*RK_a[i,j]*f.vs[j][:]
-                solve(K,f.u[0],f.DU[0])
-                f.u[0][:] += f.u0[0][:]
+                    if f.M!=None:
+                        f.DU[0][:] += h*RK_a[i,j]*f.ks[j][:] # Need to solve matrix
+                    else:
+                        f.u[0][:] += h*RK_a[i,j]*f.ks[j][:] 
+                    if f.order == 2:
+                        f.u[1][:] += h*RK_a[i,j]*f.vs[j][:]
+                if f.M!=None:
+                    solve(f.M,f.u[0],f.DU[0])
+                    f.u[0][:] += f.u0[0][:]
                 f.update()
             # Step 2: Solve Implicit fields
             for f in self.im_fields:
-                print " Solving Implicit field... "
-                F,K = f.sys(time)
-                f.bcapp(F,K,time+h*RK_c[i],itcnt!=0)
-                print "   Solving Matrix... "
-                solve(K,f.DU[0],F)
-                eps = np.linalg.norm(f.DU[0].array(), ord=np.Inf)
-                print "  ",itcnt," Norm:", eps
-                f.u[0][:] = f.u[0][:] + f.DU[0][:]
-                f.update()
-                itcnt += 1
+                self.DPRINT( " Solving Implicit field... ")
+                eps = 1.0
+                tol = 1.0e-10
+                maxiter = 10
+                itcnt = 0
+                while eps>tol and itcnt < maxiter:
+                    self.DPRINT("  Solving...")
+                    F,K = f.sys(time)
+                    f.bcapp(F,K,time+h*RK_c[i],itcnt!=0)
+                    self.DPRINT( "   Solving Matrix... ")
+                    if K is Matrix:
+                        solve(K,f.DU[0],F)
+                        eps = np.linalg.norm(f.DU[0].array(), ord=np.Inf)
+                    else:
+
+                        f.DU[0][:] = 1.0/K[0,0]*F
+                        eps = np.abs(f.DU[0])
+                    # embed()
+                    self.DPRINT( "  ",itcnt," Norm:", eps)
+                    f.u[0][:] = f.u[0][:] + f.DU[0][:]
+                    f.update()
+                    itcnt += 1
             
             # Step 3: Compute k for each field
             for f in self.ex_fields:
                 F = f.sys(time)
-                f.bcapp(None,F,time+h*RK_c[i],itcnt!=0)
+                f.bcapp(None,F,time+h*RK_c[i],False)
                 f.ks.append(F)
                 if f.order == 2:
                     f.vs.append(f.u[0].copy())
@@ -110,9 +153,39 @@ class exRK():
             for s,v in zip(f.u,f.u0):
                 s[:] = v[:]
             for j in xrange(len(RK_b)):
-                f.DU[0] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
-                if order == 2:
-                    f.u[1] += h*RK_b[j]*f.vs[j][:]
-            solve(K,f.u[0],f.DU[0])
-            f.u[0][:] += f.u0[0][:]
+                if f.M!=None:
+                    f.DU[0][:] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
+                else:
+                    # embed()
+                    f.u[0][:] += h*RK_b[j]*f.ks[j][:]
+                if f.order == 2:
+                    f.u[1][:] += h*RK_b[j]*f.vs[j][:]
+            if f.M!=None:
+                solve(K,f.u[0],f.DU[0])
+                f.u[0][:] += f.u0[0][:]
+            
             f.update()
+
+        # Solve the implicit equation here
+        # Step 2: Solve Implicit fields
+        for f in self.im_fields:
+            self.DPRINT( " Solving Implicit field... ")
+            eps = 1.0
+            tol = 1.0e-10
+            maxiter = 10
+            itcnt = 0
+            while eps>tol and itcnt < maxiter:
+                self.DPRINT("  Solving...")
+                F,K = f.sys(time)
+                f.bcapp(F,K,time+h*RK_c[i],itcnt!=0)
+                self.DPRINT( "   Solving Matrix... ")
+                if K is Matrix:
+                    solve(K,f.DU[0],F)
+                    eps = np.linalg.norm(f.DU[0].array(), ord=np.Inf)
+                else:
+                    f.DU[0][:] = 1.0/K[0,0]*F
+                    eps = np.abs(f.DU[0])
+                self.DPRINT( "  ",itcnt," Norm:", eps)
+                f.u[0][:] = f.u[0][:] + f.DU[0][:]
+                f.update()
+                itcnt += 1
