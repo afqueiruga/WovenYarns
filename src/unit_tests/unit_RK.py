@@ -4,7 +4,7 @@ Verify the RK routines on silly ODES
 import numpy as np
 
 from dolfin import *
-from src import exRK
+from src.RKnew import exRK
 import matplotlib
 from matplotlib import pylab as plt
 
