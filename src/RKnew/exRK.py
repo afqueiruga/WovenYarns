@@ -9,7 +9,7 @@ from IPython import embed
 Tableaus are from Butcher's Giant Book of Tableaus
 """
 exRK_table = {
-    '1' : {
+    'FWEuler' : {
         'a':np.array([ [0.0]], dtype=np.double),
         'b':np.array([ 1.0 ], dtype=np.double),
         'c':np.array([ 0.0 ], dtype=np.double)
@@ -68,6 +68,8 @@ class exRK(RKbase):
             for f in self.ex_fields:
                 for s,v in zip(f.u,f.u0):
                     s[:] = v[:]
+                if f.M!=None:
+                    f.DU[0][:]=0.0
                 for j in xrange(i):
                     if f.M!=None:
                         f.DU[0][:] += h*RK_a[i,j]*f.ks[j][:] # Need to solve matrix
@@ -91,16 +93,20 @@ class exRK(RKbase):
                     F,K = f.sys(time)
                     f.bcapp(K,F, time+h*RK_c[i],itcnt!=0)
                     self.DPRINT( "   Solving Matrix... ")
-                    if K is Matrix:
+                    # embed()
+                    if type(K) is Matrix:
                         solve(K,f.DU[0],F)
                         eps = np.linalg.norm(f.DU[0].array(), ord=np.Inf)
                     else:
-
                         f.DU[0][:] = 1.0/K[0,0]*F
                         eps = np.abs(f.DU[0])
                     # embed()
+                    
                     self.DPRINT( "  ",itcnt," Norm:", eps)
-                    f.u[0][:] = f.u[0][:] + f.DU[0][:]
+                    if np.isnan(eps):
+                        print "Hit a Nan! Quitting"
+                        raise
+                    f.u[0][:] = f.u[0][:] - f.DU[0][:]
                     f.update()
                     itcnt += 1
             
@@ -116,6 +122,8 @@ class exRK(RKbase):
         for f in self.ex_fields:
             for s,v in zip(f.u,f.u0):
                 s[:] = v[:]
+            if f.M!=None:
+                    f.DU[0][:]=0.0
             for j in xrange(len(RK_b)):
                 if f.M!=None:
                     f.DU[0][:] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
@@ -125,7 +133,7 @@ class exRK(RKbase):
                 if f.order == 2:
                     f.u[1][:] += h*RK_b[j]*f.vs[j][:]
             if f.M!=None:
-                solve(K,f.u[0],f.DU[0])
+                solve(f.M,f.u[0],f.DU[0])
                 f.u[0][:] += f.u0[0][:]
             
             f.update()
@@ -143,13 +151,17 @@ class exRK(RKbase):
                 F,K = f.sys(time)
                 f.bcapp(K,F,time+h*RK_c[i],itcnt!=0)
                 self.DPRINT( "   Solving Matrix... ")
-                if K is Matrix:
+                if type(K) is Matrix:
                     solve(K,f.DU[0],F)
                     eps = np.linalg.norm(f.DU[0].array(), ord=np.Inf)
                 else:
                     f.DU[0][:] = 1.0/K[0,0]*F
                     eps = np.abs(f.DU[0])
                 self.DPRINT( "  ",itcnt," Norm:", eps)
-                f.u[0][:] = f.u[0][:] + f.DU[0][:]
+                if np.isnan(eps):
+                    print "Hit a Nan! Quitting"
+                    raise
+                f.u[0][:] = f.u[0][:] - f.DU[0][:]
                 f.update()
                 itcnt += 1
+        

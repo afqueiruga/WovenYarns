@@ -40,6 +40,7 @@ class RKbase():
             else:
                 self.ex_fields.append(f)
     def DPRINT(*args):
+        return
         for a in args[1:]:
             print a,
         print ""
