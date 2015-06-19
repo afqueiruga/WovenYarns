@@ -5,7 +5,7 @@ from matplotlib import pylab as plt
 from IPython import embed
 import time
 
-from src.RKnew import RKbase,exRK
+from src.RKnew import RKbase,exRK,imRK
 
 set_log_level(CRITICAL)
 
@@ -43,16 +43,20 @@ warp = Warp(endpts, props, {}, [40], DecoupledProblem)
 """
 Boundary conditions on the updates
 """
+subR = MultiMeshSubSpace(warp.spaces['W'],0)
 zeroW = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 zeroV = Constant((0.0,0.0,0.0))
 zeroS = Constant(0.0)
 bound = CompiledSubDomain(" on_boundary")
-bcR = MultiMeshDirichletBC(warp.spaces['W'], zeroW, bound)
+bcR = MultiMeshDirichletBC(subR, zeroV, bound)
 bcT = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
 bcV = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
 # Do the mechanical field
-def sys_mech(time):
-    return warp.assemble_form('F','W') #,'AX','AV'],'W')
+def sys_mech(time,tang=False):
+    if tang:
+        return warp.assemble_forms(['F','AX','AV'],'W')
+    else:
+        return warp.assemble_form('F','W')
 def bcapp_mech(K,R,t,hold=False):
     if K!=None:
         bcR.apply(K,R)
@@ -63,8 +67,11 @@ rkf_mech = RKbase.RK_field(2, [warp.fields['wv'].vector(),
                                 warp.assemble_form('M','W'),
                                 sys_mech,bcapp_mech,warp.update)
     # Do the thermal field
-def sys_temp(time):
-    return warp.assemble_form('FT','S') #,'AT'],'S')
+def sys_temp(time,tang=False):
+    if tang:
+        return warp.assemble_forms(['FT','AT'],'S')
+    else:
+        return warp.assemble_form('FT','S')
 def bcapp_temp(K,R,t,hold=False):
     if K!=None:
         bcT.apply(K,R)
@@ -74,7 +81,7 @@ rkf_temp = RKbase.RK_field(1,[warp.fields['T'].vector()],
                                warp.assemble_form('MT','S'),
                                sys_temp,bcapp_temp,warp.update)
     # Do the em field
-def sys_em(time):
+def sys_em(time,tang=False):
     return warp.assemble_forms(['FE','AE'],'S')
 def bcapp_em(K,R,t,hold=False):
     bcV.apply(K,R)
@@ -83,7 +90,7 @@ rkf_em = RKbase.RK_field(0,[warp.fields['Vol'].vector()],
                              sys_em,bcapp_em,warp.update)
     
     # Return the fields
-fields = [rkf_mech,rkf_temp,rkf_em]
+fields = [rkf_temp] #[rkf_temp,rkf_em,
 #    return warp,[rkf_temp] #rkf_mech,rkf_em]
 
 
@@ -162,15 +169,19 @@ def solver(NT,stepclass,tag,scheme,warp,fields, rescache=None,outdir=None):
 tests = [
     # [exRK.exRK,"FWEuler",exRK.exRK_table["FWEuler"],  [] ],
     # [exRK.exRK,"RK2-mid",exRK.exRK_table["RK2-mid"],  [1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
-        [exRK.exRK,"RK2-trap",exRK.exRK_table["RK2-trap"],  [6e3,7e3,8e3,9e3,1e4] ],
+        # [exRK.exRK,"RK2-trap",exRK.exRK_table["RK2-trap"],  [6e3,7e3,8e3,9e3,1e4] ],
 
-    [exRK.exRK,"RK3-1",exRK.exRK_table["RK3-1"],  [1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
-    [exRK.exRK,"RK4",exRK.exRK_table["RK4"],  [1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ]
+    # [exRK.exRK,"RK3-1",exRK.exRK_table["RK3-1"],  [1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
+    [exRK.exRK,"RK4",exRK.exRK_table["RK4"],  [8e3]] #,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
+    # [ imRK.DIRK,"BWEuler",imRK.LDIRK["BWEuler"], [1e3,2e3,4e3,5e3]],
+    # [ imRK.DIRK,"LSDIRK2",imRK.LDIRK["LSDIRK2"], [100,200,300,400,500]],
+    # [ imRK.DIRK,"LSDIRK3",imRK.LDIRK["LSDIRK3"], [400,500]]#[100,200,300,400,500]]
+
 ]
 
 for cl,tag,tab, NTS in tests:
     for NT in NTS:
-        solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/exrk_timed",None)
+        R=solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/rk_pin2",None)
 
 # warp,fields = DecoupledSetup()
 # R=solve(int(1e4),exRK.exRK,"RK4",exRK.exRK_table["RK4"], warp,fields, "exrk","post/exrk/")

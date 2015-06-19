@@ -17,18 +17,18 @@ b1 = -(6.0*alpha*alpha - 16.0*alpha+1.0)/4.0
 b2 = (6.0*alpha*alpha - 20.0*alpha+5.0)/4.0
                 
 LDIRK = {
-    1 : {
+    'BWEuler' : {
         'a':np.array([ [1.0]], dtype=np.double),
         'b':np.array([ 1.0 ], dtype=np.double),
         'c':np.array([ 1.0 ], dtype=np.double)
     },
-    2 : {
+    'LSDIRK2' : {
         'a':np.array([ [alpha_2, 0.0],
                        [1.0-alpha_2, alpha_2] ], dtype=np.double),
         'b':np.array([ alpha_2, 1.0 ], dtype=np.double),
         'c':np.array([ alpha_2, 1.0 ], dtype=np.double)
     },
-    3 : {
+    'LSDIRK3' : {
         'a': np.array([ [ alpha, 0.0, 0.0 ],
                         [ tau-alpha, alpha, 0.0 ],
                         [ b1, b2, alpha ] ], dtype=np.double),
@@ -54,20 +54,21 @@ class DIRK(RKbase):
             f.ks = []
             if f.order == 2:
                 f.vs = []
+            if f.M==None:
+                f.M = np.array([[1.0]],dtype=np.double)
         for i in xrange(len(RK_c)):
-            self.DPRINT( " Stage ",i," at ",RK_c[i]," with ai_=",RK_a[i,:] )
+            self.DPRINT( " Stage ",i," at ",RK_c[i]," with aii=",RK_a[i,:] )
             aii = float(RK_a[i,i])
             
             # One time set up
             for f in self.ex_fields:
-                f.Rhat[:] = f.M*V0[:]
+                f.Rhat[:] = f.M*f.u0[0][:]
                 if f.order == 2:
                     f.uhat[1][:] = f.u0[1][:]
                 for j in xrange(i):
                     f.Rhat[:] += h*RK_a[i,j]*f.ks[j][:]
                     if f.order == 2:
                         f.uhat[1][:] += h*RK_a[i,j]*f.vs[j][:]
-                        
             # The outer field iteration
             alldone = False
             itout = 0
@@ -75,8 +76,8 @@ class DIRK(RKbase):
             while not alldone and itout < maxout:
                 alldone = True
                 # Iterate over each of the fileds
-                for f in self.ex_fields + self.im_fields:
-                    self.DPRINT( " Solving Explicit field... ")
+                for f in  self.im_fields + self.ex_fields :
+                    self.DPRINT( " Solving field of order ",f.order)
                     eps = 1.0
                     tol = 1.0e-10
                     maxiter = 10
@@ -87,13 +88,15 @@ class DIRK(RKbase):
                         self.DPRINT("  Solving...")
                         # Assemble
                         if f.order==0:
-                            R,K = f.sys(time)
+                            R,K = f.sys(time,True)
                         elif f.order==1:
-                            F,AU = f.sys(time)
+                            F,AU = f.sys(time,True)
                             K = f.M - h*aii*AU
                             R = f.Rhat - f.M*f.u[0] + h*aii*F
                         elif f.order==2:
-                            F,AX,AV = f.sys(time)
+                            F,AX,AV = f.sys(time,True)
+                            K = f.M - h*h*aii*aii*AX - h*aii*AV
+                            R = f.Rhat - f.M*f.u[0] + h*aii*F
                         else:
                             print "Unknown order type ",f.order
                             raise
@@ -101,11 +104,12 @@ class DIRK(RKbase):
                         f.bcapp(K,R, time+h*RK_c[i],itcnt!=0)
                         self.DPRINT( "   Solving Matrix... ")
                         # Solve the Matrix
-                        if type(K) is Matrix:
-                            solve(K,f.DU[0],F)
+                        # embed()
+                        if type(K) is GenericMatrix or type(K) is Matrix:
+                            solve(K,f.DU[0],R)
                             eps = np.linalg.norm(f.DU[0].array(), ord=np.Inf)
                         else:
-                            f.DU[0][:] = 1.0/K[0,0]*F
+                            f.DU[0][:] = 1.0/K[0,0]*R
                             eps = np.abs(f.DU[0])
                         # embed()
 
@@ -121,12 +125,18 @@ class DIRK(RKbase):
                             f.u[0][:] = f.u[0][:] + f.DU[0][:]
                         else: # 2
                             f.u[0][:] = f.u[0][:] + f.DU[0][:]
-                            f.u[1][:] = f.uhat[1][:] + h*aii*f.u[1][:]
+                            f.u[1][:] = f.uhat[1][:] + h*aii*f.u[0][:]
                         f.update()
                         itcnt += 1
                     # end newton iteration
+                    if itcnt > 1:
+                        alldone = False
                 # end field loop
-                if itcnt > 2:
-                    alldone = False
                 itout += 1
             # end coupling iteration
+            print "Took ", itout, " coupling iterations"
+            for f in self.ex_fields:
+                f.ks.append(f.sys(time,False))
+                if f.order == 2:
+                    f.vs.append(f.u[0].copy())
+        # end stage loop

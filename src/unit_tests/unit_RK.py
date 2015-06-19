@@ -4,19 +4,22 @@ Verify the RK routines on silly ODES
 import numpy as np
 
 from dolfin import *
-from src.RKnew import exRK
+from src.RKnew import exRK,imRK
 import matplotlib
 from matplotlib import pylab as plt
 
-def problem1():
+def problem1(NT,stepclass,scheme,plotit=False):
     """
     2nd order oscillator
     """
     M_1 = None #np.array([[1.0]],dtype=np.double)
     x = np.array([0.1],dtype=np.double)
     u = np.array([0.0],dtype=np.double)
-    def sys_1(time):
-        return np.array([-x[0]],np.double)
+    def sys_1(time,tang=False):
+        if tang:
+            return [np.array([-x[0]],np.double), np.array([[-1.0]],np.double),np.array([[0.0]],np.double)]
+        else:
+            return np.array([-x[0]],np.double)
     def bcapp(K,R,time,hold):
         pass
     def update():
@@ -25,20 +28,59 @@ def problem1():
     odef = exRK.RK_field(2, [u,x],M_1,sys_1,bcapp,update)
 
     Tmax = 10.0
-    NT = 500
+    # NT = 500
     h = Tmax / NT
-    RKER = exRK.exRK(h, exRK.exRK_table[1], [odef])
+    RKER = stepclass(h, scheme, [odef])
 
-    us = np.zeros(NT+1,dtype=np.double)
-    us[0] = x[0]
+    if plotit:
+        us = np.zeros(NT+1,dtype=np.double)
+        us[0] = x[0]
     for t in xrange(NT):
         RKER.march()
-        us[t+1] = x[0]
+        if plotit:
+            us[t+1] = x[0]
+    if plotit:
+        times = np.linspace(0.0,Tmax,NT+1)
+        plt.plot(times,us)
+        # plt.show()
+    return [x[0]]
+def problem2(NT,stepclass,scheme,plotit=False):
+    """
+    1st order decay
+    """
+    M_1 = None #np.array([[1.0]],dtype=np.double)
+    x = np.array([0.1],dtype=np.double)
+    # u = np.array([0.0],dtype=np.double)
+    def sys_1(time,tang=False):
+        if tang:
+            return [np.array([-x[0]],np.double), np.array([[-1.0]],np.double)]
+        else:
+            return np.array([-x[0]],np.double)
+    def bcapp(K,R,time,hold):
+        pass
+    def update():
+        pass
 
-    plt.plot(us)
-    plt.show()
+    odef = exRK.RK_field(1, [x],M_1,sys_1,bcapp,update)
 
-def problem2(NT,type,plotit=False):
+    Tmax = 10.0
+    # NT = 500
+    h = Tmax / NT
+    RKER = stepclass(h, scheme, [odef])
+
+    if plotit:
+        us = np.zeros(NT+1,dtype=np.double)
+        us[0] = x[0]
+    for t in xrange(NT):
+        RKER.march()
+        if plotit:
+            us[t+1] = x[0]
+    if plotit:
+        times = np.linspace(0.0,Tmax,NT+1)
+        plt.plot(times,us)
+        # plt.show()
+    return [x[0]]
+def problem3(NT,stepclass,scheme,plotit=False):
     """
     That DAE of mine
     """
@@ -68,25 +110,35 @@ def problem2(NT,type,plotit=False):
         pass
     
     # Build Fields
-    def sys_mech(time):
-        return nd( -(K+K_alpha*T[0])*y[0] + I[0]*B )
+    def sys_mech(time,tang=False):
+        if tang:
+            return [ nd( -(K+K_alpha*T[0])*y[0] + I[0]*B ),
+                    nd( [ -(K+K_alpha*T[0]) ] ),
+                    nd( [ 0.0 ] ) ]
+        else:
+            return nd( -(K+K_alpha*T[0])*y[0] + I[0]*B )
     field_mech = exRK.RK_field(2, [v,y],None,sys_mech,bcapp,update)
-    def sys_temp(time):
-        return nd( I[0]**2.0/R - (h_conv+h_conv_alpha*v[0])*(T[0]-Tinf) )
+    def sys_temp(time,tang=False):
+        if tang:
+            return [ nd( I[0]**2.0/R - (h_conv+h_conv_alpha*v[0])*(T[0]-Tinf) ),
+                     nd( [ (h_conv+h_conv_alpha*v[0]) ] ) ]
+        else:
+            return nd( I[0]**2.0/R - (h_conv+h_conv_alpha*v[0])*(T[0]-Tinf) )
     field_temp = exRK.RK_field(1, [T],None,sys_temp,bcapp,update)
-    def sys_em(time):
-        return nd( -Vapp + (R+R_alpha*T[0])*I[0] + v[0]*B), nd([-R])
+    def sys_em(time,tang=False):
+        return nd( -Vapp + (R+R_alpha*T[0])*I[0] + v[0]*B), nd([R])
     field_em = exRK.RK_field(0, [I],None,sys_em,bcapp,update)
     
     # Create the timestepper and march
     Tmax = 10.0
     h = Tmax / NT
-    RKER = exRK.exRK(h, exRK.exRK_table[type], [field_mech,field_temp,field_em])
+    RKER = stepclass(h, scheme, [field_mech,field_temp,field_em])
 
     if plotit:
         us = np.zeros([NT+1,4],dtype=np.double)
         us[0,:] = [y[0],v[0],T[0],I[0]]
     for t in xrange(NT):
+        # print t, "/",NT
         RKER.march()
         if plotit:
             us[t+1,:] = [y[0],v[0],T[0],I[0]]
@@ -98,7 +150,7 @@ def problem2(NT,type,plotit=False):
         plt.plot(times,us[:,2],label='T')
         plt.plot(times,us[:,3],label='I')
         plt.legend()
-        plt.show()
+        # plt.show()
     return [y[0],v[0],T[0],I[0]]
 
 
@@ -109,18 +161,20 @@ from IPython import embed
 
 tests = {
     # '1':range(5000,100000,10000),
-    'RK2-trap':range(100,2000,200),
-    'RK2-mid':range(100,2000,200),
-    'RK3-1':range(100,3000,300),
-    'RK4':range(100,1000,100)+[10000]
+    'RK2-trap':[exRK.exRK,exRK.exRK_table['RK2-trap'],range(100,2000,200)],
+    'RK2-mid':[exRK.exRK,exRK.exRK_table['RK2-mid'],range(100,2000,200)],
+    'RK3-1':[exRK.exRK,exRK.exRK_table['RK3-1'],range(100,3000,300)],
+    'RK4':[exRK.exRK,exRK.exRK_table['RK4'],range(100,1000,100)+[10000]],
+    'BWEuler':[imRK.DIRK,imRK.LDIRK['BWEuler'],range(100,1000,100)],
+    'LSDIRK3':[imRK.DIRK,imRK.LDIRK['LSDIRK3'],range(100,1000,100)+[10000]]
     }
 
 results = {}
 # embed()
-for method,NTS in tests.iteritems():
+for method,(cl,sc,NTS) in tests.iteritems():
     R = []
     for nt in NTS:
-        res=problem2(nt,method,False)
+        res=problem3(nt,cl,sc,True)
         R.append([nt]+res)
     results[method]=np.array(R)
 
@@ -137,12 +191,12 @@ def make_error_plots(sd, sdconv, labels):
     # hsconv = [ Tmax / dat[:,0] for dat in sdconv]
     colors = ["b","g","r"]
     c = 'r'
-    for i in xrange(4):
+    for i in xrange(1):
         label = labels[i]
         plt.figure()
         plt.xlabel("Logarithm of time step size log(h)")
         plt.ylabel("Logarithm of error in "+label)
-        best = sd['RK4'][-1,i+1]
+        best = sd['RK4'][-1,i+1] #np.exp(-10.0)*0.1 #
         for k in sd.iterkeys():
             plt.loglog( hs[k], [np.abs(y-best) for y in sd[k][:,i+1]],'+-',label=k)
             # plt.loglog( hsconv[o], [np.abs(y-best) for y in datconv[:,i+1]],'+',color=c)

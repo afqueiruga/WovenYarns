@@ -66,11 +66,13 @@ class exRK(RKbase):
             # embed()
             # Step 1: Calculate values of explicit fields at this step
             for f in self.ex_fields:
+
                 for s,v in zip(f.u,f.u0):
                     s[:] = v[:]
                 if f.M!=None:
                     f.DU[0][:]=0.0
                 for j in xrange(i):
+                    # embed()
                     if f.M!=None:
                         f.DU[0][:] += h*RK_a[i,j]*f.ks[j][:] # Need to solve matrix
                     else:
@@ -78,6 +80,8 @@ class exRK(RKbase):
                     if f.order == 2:
                         f.u[1][:] += h*RK_a[i,j]*f.vs[j][:]
                 if f.M!=None:
+                    # embed()
+                    f.u[0][:] = 0.0
                     solve(f.M,f.u[0],f.DU[0])
                     f.u[0][:] += f.u0[0][:]
                 f.update()
@@ -123,7 +127,7 @@ class exRK(RKbase):
             for s,v in zip(f.u,f.u0):
                 s[:] = v[:]
             if f.M!=None:
-                    f.DU[0][:]=0.0
+                f.DU[0][:]=0.0
             for j in xrange(len(RK_b)):
                 if f.M!=None:
                     f.DU[0][:] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
@@ -133,6 +137,7 @@ class exRK(RKbase):
                 if f.order == 2:
                     f.u[1][:] += h*RK_b[j]*f.vs[j][:]
             if f.M!=None:
+                f.u[0][:]=0.0
                 solve(f.M,f.u[0],f.DU[0])
                 f.u[0][:] += f.u0[0][:]
             

@@ -18,8 +18,12 @@ class RK_field():
         self.u0 = [ s.copy() for s in self.u ]
         # if order == 0:
         self.DU = [ s.copy() for s in self.u ]
+
+        if order >0:
+            self.Rhat = u[0].copy()
         if order == 2:
             self.uhat = [ s.copy() for s in self.u ]
+            
     def save_u0(self):
         for s,v in zip(self.u0,self.u):
             s[:] = v[:]
