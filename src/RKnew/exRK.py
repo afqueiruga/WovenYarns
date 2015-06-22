@@ -66,24 +66,21 @@ class exRK(RKbase):
             # embed()
             # Step 1: Calculate values of explicit fields at this step
             for f in self.ex_fields:
-
                 for s,v in zip(f.u,f.u0):
                     s[:] = v[:]
-                if f.M!=None:
-                    f.DU[0][:]=0.0
+                f.DU[0][:]=0.0
                 for j in xrange(i):
-                    # embed()
-                    if f.M!=None:
-                        f.DU[0][:] += h*RK_a[i,j]*f.ks[j][:] # Need to solve matrix
-                    else:
-                        f.u[0][:] += h*RK_a[i,j]*f.ks[j][:] 
+                    f.DU[0][:] += h*RK_a[i,j]*f.ks[j][:] # Need to solve matrix
                     if f.order == 2:
                         f.u[1][:] += h*RK_a[i,j]*f.vs[j][:]
                 if f.M!=None:
-                    # embed()
-                    f.u[0][:] = 0.0
-                    solve(f.M,f.u[0],f.DU[0])
+                    f.u[0][:]=0.0
+                    solve(f.Mbc,f.u[0],f.DU[0])
+                    # f.bcapp(None,f.u[0],time+h*RK_c[i],False)
                     f.u[0][:] += f.u0[0][:]
+                else:
+                    f.bcapp(None,f.DU[0],time+h*RK_c[i],False)
+                    f.u[0][:] += f.DU[0][:]
                 f.update()
             # Step 2: Solve Implicit fields
             for f in self.im_fields:
@@ -121,26 +118,25 @@ class exRK(RKbase):
                 f.ks.append(F)
                 if f.order == 2:
                     f.vs.append(f.u[0].copy())
-
+        # end stage loop
+        
         # Do the final Mv=sum bk
         for f in self.ex_fields:
             for s,v in zip(f.u,f.u0):
                 s[:] = v[:]
-            if f.M!=None:
-                f.DU[0][:]=0.0
+            f.DU[0][:]=0.0
             for j in xrange(len(RK_b)):
-                if f.M!=None:
-                    f.DU[0][:] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
-                else:
-                    # embed()
-                    f.u[0][:] += h*RK_b[j]*f.ks[j][:]
+                f.DU[0][:] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
                 if f.order == 2:
                     f.u[1][:] += h*RK_b[j]*f.vs[j][:]
             if f.M!=None:
                 f.u[0][:]=0.0
-                solve(f.M,f.u[0],f.DU[0])
+                solve(f.Mbc,f.u[0],f.DU[0])
+                # f.bcapp(None,f.u[0],time+h,False)
                 f.u[0][:] += f.u0[0][:]
-            
+            else:
+                # f.bcapp(None,f.DU[0],time+h,False)
+                f.u[0][:] += f.DU[0][:]
             f.update()
 
         # Solve the implicit equation here

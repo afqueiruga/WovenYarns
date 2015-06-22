@@ -23,7 +23,11 @@ class RK_field():
             self.Rhat = u[0].copy()
         if order == 2:
             self.uhat = [ s.copy() for s in self.u ]
-            
+
+        if self.M!=None:
+            self.Mbc = self.M.copy()
+            self.bcapp(self.Mbc,None,0.0,False)
+        
     def save_u0(self):
         for s,v in zip(self.u0,self.u):
             s[:] = v[:]

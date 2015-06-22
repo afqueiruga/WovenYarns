@@ -34,6 +34,9 @@ props =  [{
 endpts = [ [[-1.0,0.0,0.0],[1.0,0.0,0.0]] ]
 
 
+
+
+
 """
 Helper routine that creates a new decoupled warp
 """
@@ -59,8 +62,8 @@ def sys_mech(time,tang=False):
         return warp.assemble_form('F','W')
 def bcapp_mech(K,R,t,hold=False):
     if K!=None:
-        bcR.apply(K,R)
-    else:
+        bcR.apply(K)
+    if R!=None:
         bcR.apply(R)
 rkf_mech = RKbase.RK_field(2, [warp.fields['wv'].vector(),
                                    warp.fields['wx'].vector()],
@@ -74,8 +77,8 @@ def sys_temp(time,tang=False):
         return warp.assemble_form('FT','S')
 def bcapp_temp(K,R,t,hold=False):
     if K!=None:
-        bcT.apply(K,R)
-    else:
+        bcT.apply(K)
+    if R!=None:
         bcT.apply(R)
 rkf_temp = RKbase.RK_field(1,[warp.fields['T'].vector()],
                                warp.assemble_form('MT','S'),
@@ -90,24 +93,74 @@ rkf_em = RKbase.RK_field(0,[warp.fields['Vol'].vector()],
                              sys_em,bcapp_em,warp.update)
     
     # Return the fields
-fields = [rkf_temp] #[rkf_temp,rkf_em,
+fields = [rkf_mech,rkf_temp,rkf_em]
 #    return warp,[rkf_temp] #rkf_mech,rkf_em]
+
+
+
+
+
+"""
+Build the monolothic warp
+"""
+warp_m =  Warp(endpts, props, {}, [40], MonolithicProblem)
+subR_m = MultiMeshSubSpace(warp_m.spaces['W'],0)
+subT_m = MultiMeshSubSpace(warp_m.spaces['W'],3)
+subV_m = MultiMeshSubSpace(warp_m.spaces['W'],4)
+# bcall_m = MultiMeshDirichletBC(warp_m.spaces['W'], zero, bound)
+bcR_m = MultiMeshDirichletBC(subR_m, zeroV, bound)
+bcT_m = MultiMeshDirichletBC(subT_m, zeroS, bound)
+bcV_m = MultiMeshDirichletBC(subV_m, zeroS, bound)
+
+def sys_m(time,tang=False):
+    if tang:
+        return warp_m.assemble_forms(['F','AX','AV'],'W')
+    else:
+        return warp_m.assemble_form('F','W')
+def bcapp_m(K,R,t,hold=False):
+    if K!=None:
+        bcR_m.apply(K)
+        bcT_m.apply(K)
+        bcV_m.apply(K)
+    if R!=None:
+        bcR_m.apply(R)
+        bcT_m.apply(R)
+        bcV_m.apply(R)
+rkf_mono = RKbase.RK_field(2,[warp_m.fields['wv'].vector(),
+                              warp_m.fields['wx'].vector()],
+                              warp_m.assemble_form('M','W'),
+                              sys_m,bcapp_m,warp_m.update)
+fields_mono = [rkf_mono]
 
 
 
 """
 Helper routine that cleans and solves the warp with a new method
 """
-probes_mono = [ (np.array([0.0,0.0, 0.0],dtype=np.double),2,'wx'),
-            (np.array([0.5,0.0, 0.0],dtype=np.double),1,'wx'),
-            (np.array([0.5,0.0, 0.0],dtype=np.double),9,'wv'),
-            (np.array([0.5,0.0, 0.0],dtype=np.double),10,'wv')]
+probes_mono = [ (np.array([0.0,0.0, 0.0],dtype=np.double),2,'wx',11),
+            (np.array([0.5,0.0, 0.0],dtype=np.double),1,'wx',11),
+            (np.array([0.5,0.0, 0.0],dtype=np.double),9,'wv',11),
+            (np.array([0.5,0.0, 0.0],dtype=np.double),10,'wv',11)]
 probes_deco = [ (np.array([0.0,0.0, 0.0],dtype=np.double),2,'wx',9),
             (np.array([0.5,0.0, 0.0],dtype=np.double),1,'wx',9),
             (np.array([0.5,0.0, 0.0],dtype=np.double),0,'T',1),
             (np.array([0.5,0.0, 0.0],dtype=np.double),0,'Vol',1)]
 
-def initialize():
+
+def initialize_mono():
+    for i,fib in enumerate(warp_m.fibrils):
+        fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
+                                       "0.0"," 0.0","0.0",
+                                       "0.0","0.0","0.0",
+                                       "0.0", "0.0")))
+        fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
+                                       "0.0"," 0.0","0.0",
+                                       "0.0","0.0","0.0",
+                                       "0.0", "x[0]/5.0")))
+        mdof = warp_m.spaces['W'].dofmap()
+        warp_m.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
+        warp_m.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
+def initialize_deco():
     for i,fib in enumerate(warp.fibrils):
         fib.problem.fields['wx'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
@@ -124,13 +177,16 @@ def initialize():
         warp.fields['T'].vector()[ mdofS.part(i).dofs() ] = fib.problem.fields['T'].vector()[:]
         warp.fields['Vol'].vector()[ mdofS.part(i).dofs() ] = fib.problem.fields['Vol'].vector()[:]
 
-probes = probes_deco
+
+        
+probes = probes_deco#mono
+initer = initialize_deco#mono
 def solver(NT,stepclass,tag,scheme,warp,fields, rescache=None,outdir=None):
     h = Tmax/NT
     time_series = np.zeros((NT+1,len(probes)))
     times = np.zeros(NT+1)
     time_series[0] = 0.0
-    initialize()
+    initer()
     step = stepclass(h,scheme, fields)
 
     if outdir:
@@ -172,16 +228,33 @@ tests = [
         # [exRK.exRK,"RK2-trap",exRK.exRK_table["RK2-trap"],  [6e3,7e3,8e3,9e3,1e4] ],
 
     # [exRK.exRK,"RK3-1",exRK.exRK_table["RK3-1"],  [1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
-    [exRK.exRK,"RK4",exRK.exRK_table["RK4"],  [8e3]] #,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
+    [exRK.exRK,"RK4",exRK.exRK_table["RK4"],  [5e3] ],
     # [ imRK.DIRK,"BWEuler",imRK.LDIRK["BWEuler"], [1e3,2e3,4e3,5e3]],
     # [ imRK.DIRK,"LSDIRK2",imRK.LDIRK["LSDIRK2"], [100,200,300,400,500]],
-    # [ imRK.DIRK,"LSDIRK3",imRK.LDIRK["LSDIRK3"], [400,500]]#[100,200,300,400,500]]
+    # [ imRK.DIRK,"LSDIRK3",imRK.LDIRK["LSDIRK3"], [100,200,300,400,500]]
 
 ]
 
+import cProfile
 for cl,tag,tab, NTS in tests:
     for NT in NTS:
-        R=solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/rk_pin2",None)
+        cProfile.run('solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/rk_pin3",None)','rescache')
+        # R=solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/rk_pin3",None)
+
+
+tests_mono = [
+    # [ imRK.DIRK,"mBWEuler",imRK.LDIRK["BWEuler"], [1e3,2e3,4e3,5e3]],
+    # [ imRK.DIRK,"mLSDIRK2",imRK.LDIRK["LSDIRK2"], [100,200,300,400,500]],
+    [ imRK.DIRK,"mLSDIRK3",imRK.LDIRK["LSDIRK3"], [50]] #,200,300,400,500]]
+    
+]
+
+#
+# for cl,tag,tab, NTS in tests_mono:
+#     for NT in NTS:
+#         cProfile.run('solver(int(NT), cl,tag,tab, warp_m,fields_mono, "data/rk_study/rk_pin3",None)','rescache')
+#         # R=solver(int(NT), cl,tag,tab, warp_m,fields_mono, "data/rk_study/rk_pin3",None)
+
 
 # warp,fields = DecoupledSetup()
 # R=solve(int(1e4),exRK.exRK,"RK4",exRK.exRK_table["RK4"], warp,fields, "exrk","post/exrk/")

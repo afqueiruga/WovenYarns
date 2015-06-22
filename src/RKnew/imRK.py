@@ -72,7 +72,8 @@ class DIRK(RKbase):
             # The outer field iteration
             alldone = False
             itout = 0
-            maxout = 100
+            maxout = 100 if (len(self.im_fields)+len(self.ex_fields))>1 else 1
+            
             while not alldone and itout < maxout:
                 alldone = True
                 # Iterate over each of the fileds
