@@ -15,7 +15,9 @@ alpha = 0.43586652150845899942
 tau = (1.0+alpha)/2.0
 b1 = -(6.0*alpha*alpha - 16.0*alpha+1.0)/4.0
 b2 = (6.0*alpha*alpha - 20.0*alpha+5.0)/4.0
-                
+
+gamma = 0.5 + np.sqrt(3.0)/3.0*np.cos(np.pi/18.0)
+
 LDIRK = {
     'BWEuler' : {
         'a':np.array([ [1.0]], dtype=np.double),
@@ -34,6 +36,27 @@ LDIRK = {
                         [ b1, b2, alpha ] ], dtype=np.double),
         'b':np.array( [ b1, b2, alpha ], dtype=np.double),
         'c': np.array( [ alpha, tau, 1.0 ], dtype=np.double)
+    },
+    
+    'ImTrap' : {
+        'a':np.array([ [0.5]], dtype=np.double),
+        'b':np.array([ 1.0 ], dtype=np.double),
+        'c':np.array([ 0.5 ], dtype=np.double)
+    },
+    'DIRK2' : {
+        'a':np.array([ [0.5+1.0/(2.0*np.sqrt(3.0)), 0.0],
+                       [-1.0/np.sqrt(3.),           0.5+1.0/(2.0*np.sqrt(3.0))] ], dtype=np.double),
+        'b':np.array([  0.5,                        0.5 ], dtype=np.double),
+        'c':np.array([ 0.5+1.0/(2.0*np.sqrt(3.0)),  0.5-1.0/(2.0*np.sqrt(3.0)) ], dtype=np.double)
+    },
+    'DIRK3' : {
+        'a': np.array([ [ gamma, 0.0, 0.0 ],
+                        [ 0.5-gamma, gamma, 0.0 ],
+                        [ 2.0*gamma, 1.0-4.0*gamma, gamma ] ], dtype=np.double),
+        'b':np.array( [ 1.0/(24.0*(0.5-gamma)**2.),
+                        1.0-1.0/(12.0*(0.5-gamma)**2.),
+                        1.0/(24.0*(0.5-gamma)**2.) ], dtype=np.double),
+        'c': np.array( [ gamma,      0.5,         1.0-gamma ], dtype=np.double)
     }
 }
 
@@ -56,6 +79,7 @@ class DIRK(RKbase):
                 f.vs = []
             if f.M==None:
                 f.M = np.array([[1.0]],dtype=np.double)
+                f.Mbc = np.array([[1.0]],dtype=np.double)
         for i in xrange(len(RK_c)):
             self.DPRINT( " Stage ",i," at ",RK_c[i]," with aii=",RK_a[i,:] )
             aii = float(RK_a[i,i])
@@ -141,3 +165,56 @@ class DIRK(RKbase):
                 if f.order == 2:
                     f.vs.append(f.u[0].copy())
         # end stage loop
+
+        # Do the last recombination if we need to
+        if self.LSTABLE:
+            return
+        # Do the final Mv=sum bk
+        for f in self.ex_fields:
+            for s,v in zip(f.u,f.u0):
+                s[:] = v[:]
+            f.DU[0][:]=0.0
+            for j in xrange(len(RK_b)):
+                f.DU[0][:] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
+                if f.order == 2:
+                    f.u[1][:] += h*RK_b[j]*f.vs[j][:]
+            if f.M!=None:
+                f.u[0][:]=0.0
+                if type(f.Mbc) is Matrix or type(f.Mbc) is GenericMatrix:
+                    solve(f.Mbc,f.u[0],f.DU[0])
+                else:
+                    f.u[0][:] = 1.0/f.Mbc[0,0] * f.DU[0][:]
+                # f.bcapp(None,f.u[0],time+h,False)
+                f.u[0][:] += f.u0[0][:]
+            else:
+                # f.bcapp(None,f.DU[0],time+h,False)
+                f.u[0][:] += f.DU[0][:]
+            f.update()
+
+        # Solve the implicit equation here
+        # Step 2: Solve Implicit fields
+        for f in self.im_fields:
+            self.DPRINT( " Solving Implicit field... ")
+            eps = 1.0
+            tol = 1.0e-10
+            maxiter = 10
+            itcnt = 0
+            while eps>tol and itcnt < maxiter:
+                self.DPRINT("  Solving...")
+                F,K = f.sys(time)
+                f.bcapp(K,F,time+h*RK_c[i],itcnt!=0)
+                self.DPRINT( "   Solving Matrix... ")
+                if type(K) is Matrix:
+                    solve(K,f.DU[0],F)
+                    eps = np.linalg.norm(f.DU[0].array(), ord=np.Inf)
+                else:
+                    f.DU[0][:] = 1.0/K[0,0]*F
+                    eps = np.abs(f.DU[0])
+                self.DPRINT( "  ",itcnt," Norm:", eps)
+                if np.isnan(eps):
+                    print "Hit a Nan! Quitting"
+                    raise
+                f.u[0][:] = f.u[0][:] - f.DU[0][:]
+                f.update()
+                itcnt += 1
+        
