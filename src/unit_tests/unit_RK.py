@@ -160,13 +160,19 @@ from IPython import embed
 # exit()
 
 tests = {
-    # '1':range(5000,100000,10000),
-    'RK2-trap':[exRK.exRK,exRK.exRK_table['RK2-trap'],range(100,2000,200)],
+    # 'FW':range(5000,100000,10000),
+    # 'RK2-trap':[exRK.exRK,exRK.exRK_table['RK2-trap'],range(100,2000,200)],
     'RK2-mid':[exRK.exRK,exRK.exRK_table['RK2-mid'],range(100,2000,200)],
     'RK3-1':[exRK.exRK,exRK.exRK_table['RK3-1'],range(100,3000,300)],
     'RK4':[exRK.exRK,exRK.exRK_table['RK4'],range(100,1000,100)+[10000]],
+    
     'BWEuler':[imRK.DIRK,imRK.LDIRK['BWEuler'],range(100,1000,100)],
-    'LSDIRK3':[imRK.DIRK,imRK.LDIRK['LSDIRK3'],range(100,1000,100)+[10000]]
+    'LSDIRK2':[imRK.DIRK,imRK.LDIRK['LSDIRK3'],range(100,1000,100)],
+    'LSDIRK3':[imRK.DIRK,imRK.LDIRK['LSDIRK3'],range(100,1000,100)+[10000]],
+
+    'ImTrap':[imRK.DIRK,imRK.LDIRK['ImTrap'],range(100,1000,100)],
+    'DIRK2':[imRK.DIRK,imRK.LDIRK['DIRK2'],range(100,1000,100)],
+    'DIRK3':[imRK.DIRK,imRK.LDIRK['DIRK3'],range(100,1000,100)]
     }
 
 results = {}
@@ -174,7 +180,7 @@ results = {}
 for method,(cl,sc,NTS) in tests.iteritems():
     R = []
     for nt in NTS:
-        res=problem3(nt,cl,sc,True)
+        res=problem1(nt,cl,sc,False)
         R.append([nt]+res)
     results[method]=np.array(R)
 
@@ -196,7 +202,7 @@ def make_error_plots(sd, sdconv, labels):
         plt.figure()
         plt.xlabel("Logarithm of time step size log(h)")
         plt.ylabel("Logarithm of error in "+label)
-        best = sd['RK4'][-1,i+1] #np.exp(-10.0)*0.1 #
+        best = 0.1*np.cos(10.0) #sd['RK4'][-1,i+1] #np.exp(-10.0)*0.1 #
         for k in sd.iterkeys():
             plt.loglog( hs[k], [np.abs(y-best) for y in sd[k][:,i+1]],'+-',label=k)
             # plt.loglog( hsconv[o], [np.abs(y-best) for y in datconv[:,i+1]],'+',color=c)
