@@ -27,7 +27,8 @@ class RK_field():
         if self.M!=None:
             self.Mbc = self.M.copy()
             self.bcapp(self.Mbc,None,0.0,False)
-        
+        else:
+            self.Mbc = None
     def save_u0(self):
         for s,v in zip(self.u0,self.u):
             s[:] = v[:]
@@ -47,6 +48,17 @@ class RKbase():
                 self.im_fields.append(f)
             else:
                 self.ex_fields.append(f)
+                
+        # A tag to mark if the final b step is not needed if asj=bj
+        self.LSTABLE=False
+        if self.RK_c[-1]==1.0:
+            self.LSTABLE = True
+            s = len(self.RK_b)
+            for j in xrange(s):
+                if self.RK_b[j] != self.RK_a[s-1,j]:
+                    self.LSTABLE = False
+                    break
+                
     def DPRINT(*args):
         return
         for a in args[1:]:
