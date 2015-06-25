@@ -169,3 +169,10 @@ class Warp():
         for key,f in self.fields.iteritems():
             f.vector()[:] = data[key][:]
         self.update()
+
+    def dump_fibril_io_fields(self,fname):
+        data = {}
+        for i,fib in enumerate(self.fibrils):
+            df = fib.problem.split_for_io()
+            data.update({ "f{0}_{1}".format(i,k):v.compute_vertex_values() for k,v in df.iteritems() })
+        np.savez(fname,**data)
