@@ -42,12 +42,15 @@ exRK_table = {
         'c': np.array( [ 0.0, 0.5, 0.5, 1.0 ], dtype=np.double)
         }
     }
-            
+
+
+
 class exRK(RKbase):
     """
     Explicit Runge-Kuttas
     Works on up to SemiExplicit Index-1 DAEs.
     """
+    # @profile
     def march(self,time=0.0):
         h = self.h
         RK_a = self.RK_a
@@ -66,21 +69,22 @@ class exRK(RKbase):
             # embed()
             # Step 1: Calculate values of explicit fields at this step
             for f in self.ex_fields:
+                # embed()
                 for s,v in zip(f.u,f.u0):
                     s[:] = v[:]
-                f.DU[0][:]=0.0
+                f.DU[0].zero()
                 for j in xrange(i):
-                    f.DU[0][:] += h*RK_a[i,j]*f.ks[j][:] # Need to solve matrix
+                    f.DU[0].axpy( h*RK_a[i,j], f.ks[j]) # Need to solve matrix
                     if f.order == 2:
-                        f.u[1][:] += h*RK_a[i,j]*f.vs[j][:]
+                        f.u[1].axpy( h*RK_a[i,j],  f.vs[j])
                 if f.M!=None:
-                    f.u[0][:]=0.0
+                    # f.u[0][:]=0.0
                     solve(f.Mbc,f.u[0],f.DU[0])
                     # f.bcapp(None,f.u[0],time+h*RK_c[i],False)
-                    f.u[0][:] += f.u0[0][:]
+                    f.u[0] += f.u0[0] 
                 else:
                     f.bcapp(None,f.DU[0],time+h*RK_c[i],False)
-                    f.u[0][:] += f.DU[0][:]
+                    f.u[0] += f.DU[0] 
                 f.update()
             # Step 2: Solve Implicit fields
             for f in self.im_fields:
@@ -107,7 +111,7 @@ class exRK(RKbase):
                     if np.isnan(eps):
                         print "Hit a Nan! Quitting"
                         raise
-                    f.u[0][:] = f.u[0][:] - f.DU[0][:]
+                    f.u[0].axpy(-1.0, f.DU[0])
                     f.update()
                     itcnt += 1
             
@@ -124,19 +128,19 @@ class exRK(RKbase):
         for f in self.ex_fields:
             for s,v in zip(f.u,f.u0):
                 s[:] = v[:]
-            f.DU[0][:]=0.0
+            f.DU[0].zero()
             for j in xrange(len(RK_b)):
-                f.DU[0][:] += h*RK_b[j]*f.ks[j][:] # Need to solve matrix
+                f.DU[0].axpy( h*RK_b[j],f.ks[j]) # Need to solve matrix
                 if f.order == 2:
-                    f.u[1][:] += h*RK_b[j]*f.vs[j][:]
+                    f.u[1].axpy( h*RK_b[j], f.vs[j] )
             if f.M!=None:
-                f.u[0][:]=0.0
+                f.u[0].zero()
                 solve(f.Mbc,f.u[0],f.DU[0])
                 # f.bcapp(None,f.u[0],time+h,False)
-                f.u[0][:] += f.u0[0][:]
+                f.u[0] += f.u0[0] 
             else:
                 # f.bcapp(None,f.DU[0],time+h,False)
-                f.u[0][:] += f.DU[0][:]
+                f.u[0] += f.DU[0] 
             f.update()
 
         # Solve the implicit equation here
@@ -162,7 +166,7 @@ class exRK(RKbase):
                 if np.isnan(eps):
                     print "Hit a Nan! Quitting"
                     raise
-                f.u[0][:] = f.u[0][:] - f.DU[0][:]
+                f.u[0].axpy( -1.0, f.DU[0] )
                 f.update()
                 itcnt += 1
         
