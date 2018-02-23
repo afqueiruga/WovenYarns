@@ -14,7 +14,7 @@ class RK_field():
         self.sys = sys
         self.bcapp = bcapp
         self.update = update
-
+        
         self.u0 = [ s.copy() for s in self.u ]
         # if order == 0:
         self.DU = [ s.copy() for s in self.u ]
@@ -34,12 +34,14 @@ class RK_field():
             s[:] = v[:]
 
 class RKbase():
-    def __init__(self,h, tableau, fields):
+    def __init__(self,h, tableau, fields, tol=1.0e-12):
         self.h = h
         
         self.RK_a = tableau['a']
         self.RK_b = tableau['b']
         self.RK_c = tableau['c']
+
+        self.tol=tol
 
         self.im_fields = []
         self.ex_fields = []

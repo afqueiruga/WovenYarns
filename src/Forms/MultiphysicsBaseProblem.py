@@ -206,7 +206,7 @@ class MultiphysicsBaseProblem(ProblemDescription):
             Mech_FBCLoc =  -weight*J0*inner(tv,mech_bc_trac_0)*ds(1) \
                         + weight*J0*inner(tv,mech_bc_trac_1)*ds(2)
             V_FBCLoc = -weight*J0*tVol*(em_bc_r_0*Vol+em_bc_J_0)*ds(1) \
-                      + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(2)
+                      + weight*J0*tVol*(em_bc_r_1*Vol+em_bc_J_1)*ds(2) # SIGMA!
 
             # These are evaluation forms, no test functions
             p_t0_0_Loc = -weight*J0*dot(Constant((1.0,0.0,0.0)),F*S*Ez)*ds(1)

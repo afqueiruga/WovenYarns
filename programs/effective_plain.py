@@ -1,6 +1,7 @@
 from src import *
 
 from IPython import embed
+set_log_level(CRITICAL)
 
 """
 Compute the effective properties of a textile square
@@ -14,7 +15,7 @@ defaults = { 'radius':0.15,
              'dissipation':1.0e0,
              'contact_penalty':5.0,
              'mech_bc_trac_0':Constant((0.0,0.0,0.0)),
-             'contact_em':0.1}
+             'contact_em':0.01}
 props = [ {} for i in endpts ]
 Nelems = [ 20 for i in endpts ]
 
@@ -255,8 +256,8 @@ def analyze_state(fname):
     res = []
     for expr,bcs in em_tests:
         solve_em(expr,bcs)
-        solve_temp()
-        output()
+        # solve_temp()
+        # output()
         res.append(integrate_f())
     return res
 
@@ -290,12 +291,13 @@ def plot_results(results):
     plt.legend(loc=4)
     plt.show()
 
-# states = [ "data/plain_shear_"+str(t) for t in range(11) ]
-# states = ["data/plain_relaxed_data"]+[ "data/plain_stretch_"+str(t) for t in range(10) ]
-# results = map(analyze_state,states)
+states = [ "data/plain_shear_"+str(t) for t in range(11) ]
+# states = [ "data/plain_stretch_"+str(t) for t in range(10) ]
+# states = ["data/plain_relaxed_data"]
+results = map(analyze_state,states)
 # plot_results(results)
 # warp.load("data/plain_relaxed_data")
 # do_calculated_analysis()
-analyze_state("data/plain_shear_10")
-analyze_state("data/plain_stretch_9")
+# analyze_state("data/plain_shear_10")
+# analyze_state("data/plain_stretch_9")
 embed()

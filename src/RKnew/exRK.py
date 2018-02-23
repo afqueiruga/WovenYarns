@@ -90,7 +90,7 @@ class exRK(RKbase):
             for f in self.im_fields:
                 self.DPRINT( " Solving Implicit field... ")
                 eps = 1.0
-                tol = 1.0e-10
+                tol = self.tol
                 maxiter = 10
                 itcnt = 0
                 while eps>tol and itcnt < maxiter:
@@ -105,7 +105,6 @@ class exRK(RKbase):
                     else:
                         f.DU[0][:] = 1.0/K[0,0]*F
                         eps = np.abs(f.DU[0])
-                    # embed()
                     
                     self.DPRINT( "  ",itcnt," Norm:", eps)
                     if np.isnan(eps):
@@ -148,7 +147,7 @@ class exRK(RKbase):
         for f in self.im_fields:
             self.DPRINT( " Solving Implicit field... ")
             eps = 1.0
-            tol = 1.0e-10
+            tol = self.tol
             maxiter = 10
             itcnt = 0
             while eps>tol and itcnt < maxiter:

@@ -27,7 +27,7 @@ LDIRK = {
     'LSDIRK2' : {
         'a':np.array([ [alpha_2, 0.0],
                        [1.0-alpha_2, alpha_2] ], dtype=np.double),
-        'b':np.array([ alpha_2, 1.0 ], dtype=np.double),
+        'b':np.array([ 1.0-alpha_2, alpha_2 ], dtype=np.double),
         'c':np.array([ alpha_2, 1.0 ], dtype=np.double)
     },
     'LSDIRK3' : {
@@ -66,6 +66,7 @@ class DIRK(RKbase):
     When doing an LDIRK, it can handle lots of DAEs.
     When doing one with asj != bj, it can only gauruntee do Semi-Explicit.
     """
+    #@profile
     def march(self,time=0.0):
         h = self.h
         RK_a = self.RK_a
@@ -104,7 +105,7 @@ class DIRK(RKbase):
                 for f in  self.im_fields + self.ex_fields :
                     self.DPRINT( " Solving field of order ",f.order)
                     eps = 1.0
-                    tol = 1.0e-10
+                    tol = self.tol
                     maxiter = 10
                     itcnt = 0
 
@@ -181,13 +182,13 @@ class DIRK(RKbase):
             if f.M!=None:
                 f.u[0][:]=0.0
                 if type(f.Mbc) is Matrix or type(f.Mbc) is GenericMatrix:
+                    f.bcapp(None,f.DU[0],time+h,False)
                     solve(f.Mbc,f.u[0],f.DU[0])
                 else:
                     f.u[0][:] = 1.0/f.Mbc[0,0] * f.DU[0][:]
-                # f.bcapp(None,f.u[0],time+h,False)
                 f.u[0][:] += f.u0[0][:]
             else:
-                # f.bcapp(None,f.DU[0],time+h,False)
+                f.bcapp(None,f.DU[0],time+h,False)
                 f.u[0][:] += f.DU[0][:]
             f.update()
 
@@ -196,7 +197,7 @@ class DIRK(RKbase):
         for f in self.im_fields:
             self.DPRINT( " Solving Implicit field... ")
             eps = 1.0
-            tol = 1.0e-10
+            tol = self.tol
             maxiter = 10
             itcnt = 0
             while eps>tol and itcnt < maxiter:

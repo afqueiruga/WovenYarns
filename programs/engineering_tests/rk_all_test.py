@@ -12,13 +12,18 @@ set_log_level(CRITICAL)
 """
 Define the problem properties
 """
-Tmax = 5.0
+Tmax = 2.5
 
 E = 10.0
 nu = 0.0
 B = 1.0
 radius = 0.02
 Phi = np.pi/4.0
+
+sigma = 1.0
+Ryarn = 2.0/(sigma*np.pi* (radius**2.) )
+REXT = Ryarn
+VAPP = - (1.0) / ( Ryarn/(REXT+Ryarn) )
 
 props =  [{
     'mu':E/(2*(1 + nu)),
@@ -28,32 +33,41 @@ props =  [{
     'em_B':Constant((B*np.cos(Phi),B*np.sin(Phi),0.0)),
     'em_seebeck':0.1,
     'dissipation':0.01,
-    'mu_alpha':-0.01
+    'mu_alpha':-0.01,
+
+    'em_sig':sigma,
+    'em_bc_J_1': VAPP/(REXT* (np.pi*radius**2.) ),
+    'em_bc_r_1': 1.0/(REXT* (np.pi*radius**2.) )
     }]
 
 endpts = [ [[-1.0,0.0,0.0],[1.0,0.0,0.0]] ]
 
-
-
-
+# print VAPP/(REXT* (np.pi*radius**2.) )
+# print 1.0/(REXT* (np.pi*radius**2.) )
+# exit()
 
 """
 Helper routine that creates a new decoupled warp
 """
 # def DecoupledSetup():
-warp = Warp(endpts, props, {}, [40], DecoupledProblem)
+warp = Warp(endpts, props, {}, [40], DecoupledProblem, order=(1,1))
 
 """
 Boundary conditions on the updates
 """
-subR = MultiMeshSubSpace(warp.spaces['W'],0)
 zeroW = Constant((0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0))
 zeroV = Constant((0.0,0.0,0.0))
 zeroS = Constant(0.0)
-bound = CompiledSubDomain(" on_boundary")
-bcR = MultiMeshDirichletBC(subR, zeroV, bound)
+bound = CompiledSubDomain(" on_boundary ")
+boundV = CompiledSubDomain(" on_boundary && near(x[0],-1.0)")
+subQ = MultiMeshSubSpace(warp.spaces['W'],0)
+subH1 = MultiMeshSubSpace(warp.spaces['W'],1)
+subH2 = MultiMeshSubSpace(warp.spaces['W'],2)
+bcQ = MultiMeshDirichletBC(subQ, zeroV, bound)
+bcH1 = MultiMeshDirichletBC(subH1, zeroV, bound)
+bcH2 = MultiMeshDirichletBC(subH2, zeroV, bound)
 bcT = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
-bcV = MultiMeshDirichletBC(warp.spaces['S'], zeroS, bound)
+bcV = MultiMeshDirichletBC(warp.spaces['S'], zeroS, boundV)
 # Do the mechanical field
 def sys_mech(time,tang=False):
     if tang:
@@ -62,9 +76,13 @@ def sys_mech(time,tang=False):
         return warp.assemble_form('F','W')
 def bcapp_mech(K,R,t,hold=False):
     if K!=None:
-        bcR.apply(K)
+        bcQ.apply(K)
+        bcH1.apply(K)
+        bcH2.apply(K)
     if R!=None:
-        bcR.apply(R)
+        bcQ.apply(R)
+        bcH1.apply(R)
+        bcH2.apply(R)
 rkf_mech = RKbase.RK_field(2, [warp.fields['wv'].vector(),
                                    warp.fields['wx'].vector()],
                                 warp.assemble_form('M','W'),
@@ -103,14 +121,18 @@ fields = [rkf_mech,rkf_temp,rkf_em]
 """
 Build the monolothic warp
 """
-warp_m =  Warp(endpts, props, {}, [40], MonolithicProblem)
-subR_m = MultiMeshSubSpace(warp_m.spaces['W'],0)
+warp_m =  Warp(endpts, props, {}, [40], MonolithicProblem, order=(1,1))
+subQ_m = MultiMeshSubSpace(warp_m.spaces['W'],0)
+subH1_m = MultiMeshSubSpace(warp_m.spaces['W'],1)
+subH2_m = MultiMeshSubSpace(warp_m.spaces['W'],2)
 subT_m = MultiMeshSubSpace(warp_m.spaces['W'],3)
 subV_m = MultiMeshSubSpace(warp_m.spaces['W'],4)
 # bcall_m = MultiMeshDirichletBC(warp_m.spaces['W'], zero, bound)
-bcR_m = MultiMeshDirichletBC(subR_m, zeroV, bound)
+bcQ_m = MultiMeshDirichletBC(subQ_m, zeroV, bound)
+bcH1_m = MultiMeshDirichletBC(subH1_m, zeroV, bound)
+bcH2_m = MultiMeshDirichletBC(subH2_m, zeroV, bound)
 bcT_m = MultiMeshDirichletBC(subT_m, zeroS, bound)
-bcV_m = MultiMeshDirichletBC(subV_m, zeroS, bound)
+bcV_m = MultiMeshDirichletBC(subV_m, zeroS, boundV)
 
 def sys_m(time,tang=False):
     if tang:
@@ -119,11 +141,15 @@ def sys_m(time,tang=False):
         return warp_m.assemble_form('F','W')
 def bcapp_m(K,R,t,hold=False):
     if K!=None:
-        bcR_m.apply(K)
+        bcQ_m.apply(K)
+        bcH1_m.apply(K)
+        bcH2_m.apply(K)
         bcT_m.apply(K)
         bcV_m.apply(K)
     if R!=None:
-        bcR_m.apply(R)
+        bcQ_m.apply(R)
+        bcH1_m.apply(R)
+        bcH2_m.apply(R)
         bcT_m.apply(R)
         bcV_m.apply(R)
 rkf_mono = RKbase.RK_field(2,[warp_m.fields['wv'].vector(),
@@ -156,7 +182,7 @@ def initialize_mono():
         fib.problem.fields['wv'].interpolate(Expression(("0.0","0.0","0.0",
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0",
-                                       "0.0", "x[0]/5.0")))
+                                       "0.0", "1.0*(x[0]+1.0)/2.0")))
         mdof = warp_m.spaces['W'].dofmap()
         warp_m.fields['wx'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
         warp_m.fields['wv'].vector()[ mdof.part(i).dofs() ] = fib.problem.fields['wv'].vector()[:]
@@ -169,7 +195,7 @@ def initialize_deco():
                                        "0.0"," 0.0","0.0",
                                        "0.0","0.0","0.0")))
         fib.problem.fields['T'].interpolate(Expression(("0.0")))
-        fib.problem.fields['Vol'].interpolate(Expression(("x[0]/5.0")))
+        fib.problem.fields['Vol'].interpolate(Expression(("1.0*(x[0]+1.0)/2.0")))
         mdofW = warp.spaces['W'].dofmap()
         mdofS = warp.spaces['S'].dofmap()
         warp.fields['wx'].vector()[ mdofW.part(i).dofs() ] = fib.problem.fields['wx'].vector()[:]
@@ -179,8 +205,7 @@ def initialize_deco():
 
 
         
-probes = probes_deco#mono
-initer = initialize_deco#mono
+
 def solver(NT,stepclass,tag,scheme,warp,fields, rescache=None,outdir=None):
     h = Tmax/NT
     time_series = np.zeros((NT+1,len(probes)))
@@ -188,11 +213,15 @@ def solver(NT,stepclass,tag,scheme,warp,fields, rescache=None,outdir=None):
     time_series[0] = 0.0
     initer()
     step = stepclass(h,scheme, fields)
-
+    # embed()
     if outdir:
         # warp.output_states(outdir+"/dirk_{0}_"+str(0)+".pvd",0)
         warp.output_solids(outdir+"/solid_{0}_"+str(0)+".pvd",0)
 
+    for g,p in enumerate(probes):
+            ev = np.zeros(p[3])
+            warp.fibrils[0].problem.fields[p[2]].eval(ev,p[0])
+            time_series[0,g] = ev[p[1]]
     starttime = time.clock()
     for t in xrange(NT):
         times[t+1] = float(t+1.0)*h
@@ -220,42 +249,78 @@ def solver(NT,stepclass,tag,scheme,warp,fields, rescache=None,outdir=None):
         f.write("\n")
         f.close()
         warp.save(rescache+"_data/warp_{0}_{1}".format(tag,NT))
+        warp.dump_fibril_io_fields(rescache+"_data/io_{0}_{1}".format(tag,NT))
 
     return tag,NT,h,times,time_series
-tests = [
-    # [exRK.exRK,"FWEuler",exRK.exRK_table["FWEuler"],  [] ],
-    # [exRK.exRK,"RK2-mid",exRK.exRK_table["RK2-mid"],  [1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
-        # [exRK.exRK,"RK2-trap",exRK.exRK_table["RK2-trap"],  [6e3,7e3,8e3,9e3,1e4] ],
 
-    # [exRK.exRK,"RK3-1",exRK.exRK_table["RK3-1"],  [1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
-    [exRK.exRK,"RK4",exRK.exRK_table["RK4"],  [5e3] ],
-    # [ imRK.DIRK,"BWEuler",imRK.LDIRK["BWEuler"], [1e3,2e3,4e3,5e3]],
-    # [ imRK.DIRK,"LSDIRK2",imRK.LDIRK["LSDIRK2"], [100,200,300,400,500]],
-    # [ imRK.DIRK,"LSDIRK3",imRK.LDIRK["LSDIRK3"], [100,200,300,400,500]]
+tests = [
+    # [exRK.exRK,"FWEuler",exRK.exRK_table["FWEuler"],  [100,200,300,400,500,600,700,800,900,1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4]],
+    # [exRK.exRK,"RK2-mid",exRK.exRK_table["RK2-mid"],  [100,200,300,400,500,600,700,800,900,1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
+        # [exRK.exRK,"RK2-trap",exRK.exRK_table["RK2-trap"],  [2e4,3e4,4e4,5e4,6e4] ],
+
+    # [exRK.exRK,"RK3-1",exRK.exRK_table["RK3-1"],  [100,200,300,400,500,600,700,800,900,1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4] ],
+    [exRK.exRK,"RK4",exRK.exRK_table["RK4"],  [1e4] ],
+    # [ imRK.DIRK,"BWEuler",imRK.LDIRK["BWEuler"], [10,20,30,40,50,60,70,80,90]],
+    # [ imRK.DIRK,"LSDIRK2",imRK.LDIRK["LSDIRK2"], [2000,3000,4000,5000,6000,7000]],
+    # [ imRK.DIRK,"LSDIRK3",imRK.LDIRK["LSDIRK3"], [100]],
+    # [ imRK.DIRK,"ImTrap",imRK.LDIRK["ImTrap"], [6e3,7e3,8e3,9e3,1e4]],
+    # [ imRK.DIRK,"DIRK2",imRK.LDIRK["DIRK2"], [100,200,300,400,500,600,700,800,900,1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4]],
+    # [ imRK.DIRK,"DIRK3",imRK.LDIRK["DIRK3"], [100,200,300,400,500,600,700,800,900,1e3,2e3,3e3,4e3,5e3,6e3,7e3,8e3,9e3,1e4]]
 
 ]
-
+probes = probes_deco
+initer = initialize_deco
 import cProfile
 for cl,tag,tab, NTS in tests:
     for NT in NTS:
-        cProfile.run('solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/rk_pin3",None)','rescache')
-        # R=solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/rk_pin3",None)
-
+        # cProfile.run('solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/rk_pin3",None)','rescache')
+        R=solver(int(NT), cl,tag,tab, warp,fields, "data/rk_study/REVISION",None)#"post/exrk/")
 
 tests_mono = [
-    # [ imRK.DIRK,"mBWEuler",imRK.LDIRK["BWEuler"], [1e3,2e3,4e3,5e3]],
-    # [ imRK.DIRK,"mLSDIRK2",imRK.LDIRK["LSDIRK2"], [100,200,300,400,500]],
-    [ imRK.DIRK,"mLSDIRK3",imRK.LDIRK["LSDIRK3"], [50]] #,200,300,400,500]]
-    
+    # [ imRK.DIRK,"mBWEuler",imRK.LDIRK["BWEuler"], [2250,2500,2750,3000,3500,4000]],
+    # [ imRK.DIRK,"mLSDIRK2",imRK.LDIRK["LSDIRK2"], [1000,2000,3000,4000,5000,6000,7000]], 
+    # [ imRK.DIRK,"mLSDIRK3",imRK.LDIRK["LSDIRK3"], [100]]
 ]
+probes = probes_mono
+initer = initialize_mono
+for cl,tag,tab, NTS in tests_mono:
+    for NT in NTS:
+        # cProfile.run('solver(int(NT), cl,tag,tab, warp_m,fields_mono, "data/rk_study/rk_pin3",None)','rescache')
+        R=solver(int(NT), cl,tag,tab, warp_m,fields_mono, "data/rk_study/clamplong",None) 
 
-#
-# for cl,tag,tab, NTS in tests_mono:
-#     for NT in NTS:
-#         cProfile.run('solver(int(NT), cl,tag,tab, warp_m,fields_mono, "data/rk_study/rk_pin3",None)','rescache')
-#         # R=solver(int(NT), cl,tag,tab, warp_m,fields_mono, "data/rk_study/rk_pin3",None)
+
+def plot_fields():
+    plt.close('all')
+    font = {'size'   : 10}
+    matplotlib.rc('font', **font)
+    fig = plt.figure()
+    fig.set_size_inches(4,3,dpi=320)
+    plt.xlabel('Time t (ms)')
+    plt.ylabel('Vertical displacement y(0) (mm)')
+    plt.plot(R[3],R[4][:,0])
+    fig.tight_layout()
+    plt.savefig("/Users/afq/Documents/Research/Berkeley/Papers/Yarn DAE/sections/results/newtimeplots/longer_y0.pdf")
+    fig = plt.figure()
+    fig.set_size_inches(4,3,dpi=320)
+    plt.xlabel('Time t (ms)')
+    plt.ylabel('Lateral displacement z(0.5) (mm)')
+    plt.plot(R[3],R[4][:,1])
+    fig.tight_layout()
+    plt.savefig("/Users/afq/Documents/Research/Berkeley/Papers/Yarn DAE/sections/results/newtimeplots/longer_zhalf.pdf")
+    fig = plt.figure()
+    fig.set_size_inches(4,3,dpi=320)
+    plt.xlabel('Time t (ms)')
+    plt.ylabel('Temperature T(0.5) (K)')
+    plt.plot(R[3],R[4][:,2])
+    fig.tight_layout()
+    plt.savefig("/Users/afq/Documents/Research/Berkeley/Papers/Yarn DAE/sections/results/newtimeplots/longer_Thalf.pdf")
+    fig = plt.figure()
+    fig.set_size_inches(4,3,dpi=320)
+    plt.xlabel('Time t (ms)')
+    plt.ylabel('Voltage V(0.5) (V)')
+    plt.plot(R[3],R[4][:,3])
+    fig.tight_layout()
+    plt.savefig("/Users/afq/Documents/Research/Berkeley/Papers/Yarn DAE/sections/results/newtimeplots/longer_Vhalf.pdf")
 
 
-# warp,fields = DecoupledSetup()
-# R=solve(int(1e4),exRK.exRK,"RK4",exRK.exRK_table["RK4"], warp,fields, "exrk","post/exrk/")
-embed()
+# embed()
