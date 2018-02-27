@@ -6,8 +6,15 @@ A multiphysics model of heterogenous textiles and yarns implemented in FEniCS.
 Requirements
 ------------
 
-afq's patches of dolfin and FFC are required, see corresponding forks. Other custom modules 
+afq's patches of dolfin and FFC are required, see the corresponding forks. Other custom modules 
 for interacting with FEniCS are required and are referenced by this repo as submodules.
+
+The repositories are:
+- [https://bitbucket.org/afqueiruga/dolfin-fork](https://bitbucket.org/afqueiruga/dolfin-fork)
+- [https://bitbucket.org/afqueiruga/ffc-fork](https://bitbucket.org/afqueiruga/ffc-fork)
+- [https://bitbucket.org/afqueiruga/multiwriter](https://bitbucket.org/afqueiruga/multiwriter)
+- [https://bitbucket.org/afqueiruga/broadcastassembler](https://bitbucket.org/afqueiruga/broadcastassembler)
+- [https://bitbucket.org/afqueiruga/proximitytree](https://bitbucket.org/afqueiruga/proximitytree)
 
 Citations
 -------

@@ -7,6 +7,3 @@
 [submodule "src/ProximityTree"]
 	path = src/ProximityTree
 	url = ../FEniCS_Modules/ProximityTree/
-[submodule "src/ContactMultiMesh"]
-	path = src/ContactMultiMesh
-	url = ../FEniCS_Modules/ContactMultiMesh/
