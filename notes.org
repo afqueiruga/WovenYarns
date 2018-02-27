@@ -1,0 +1,40 @@
+#+TITLE:     scripts for analysis
+#+author:    afq
+
+
+#+begin_src elisp
+(setq org-src-fontify-natively t)
+(org-babel-do-load-languages t)
+#+end_src
+
+#+begin_src elisp
+(require 'package) ;; You might already have this line
+(add-to-list 'package-archives
+             '("melpa" . "https://melpa.org/packages/"))
+(when (< emacs-major-version 24)
+  ;; For important compatibility libraries like cl-lib
+  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
+(package-initialize) ;; You might already have this line
+#+end_src
+
+#+RESULTS:
+: t
+
+#+begin_src python
+  def foo():
+      print "foo"
+
+#+end_src
+
+
+* Scripts
+** Profiler
+This is how I execute line-profiler. The problem was that there are two fucking versions on my system!
+Things I need to do:
+1) Get rid of the embed
+2) Uncomment out the @profile in the march() routines
+
+#+BEGIN_SRC bash
+  python /Library/Python/2.7/site-packages/kernprof.py -l programs/engineering_tests/rk_all_test.py
+ /usr/bin/python -m line_profiler rk_all_test.py.lprof
+#+END_SRC
