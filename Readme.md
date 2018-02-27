@@ -9,6 +9,21 @@ Requirements
 afq's patches of dolfin and FFC are required, see corresponding forks. Other custom modules 
 for interacting with FEniCS are required and are referenced by this repo as submodules.
 
+Citations
+-------
+
+This repository was the basis of the following works:
+
+- Dissertation: "Microscale Simulation of the Mechanical and 
+Electromagnetic Behavior of Textiles"
+- **Queiruga, A. F.** and T. Zohdi, “Microscale modeling of effective 
+  mechanical and electrical properties of textiles,” 
+  International Journal for Numerical Methods in Engineering, 2016.
+  doi: 10.1002/nme.5268.
+- **Queiruga, A. F.** and T. Zohdi, “Formulation and numerical 
+  analysis of a fully-coupled dynamically deforming 
+  electromagnetic wire,” Computer Methods in Applied Mechanics 
+  and Engineering, vol. 305, pp. 292--315, 2016. doi: 10.1016/j.cma.2016.02.035.
 
 License
 -------
